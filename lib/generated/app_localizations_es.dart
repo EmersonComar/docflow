@@ -12,6 +12,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appTitle => 'DocFlow';
 
   @override
+  String get newsTitle => 'Novedades';
+
+  @override
   String get filters => 'Filtros';
 
   @override
@@ -141,4 +144,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get unknownError => 'Ocurrió un error desconocido';
+
+  @override
+  String get fillVariablesTitle => 'Completar Variables';
+
+  @override
+  String get confirmCopy => 'Copiar';
+
+  @override
+  String get changeLanguage => 'Idioma';
 }

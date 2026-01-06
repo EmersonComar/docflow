@@ -10,6 +10,10 @@ import '../providers/theme_notifier.dart';
 import '../widgets/add_template_dialog.dart';
 
 import '../widgets/filter_panel.dart';
+import '../../core/utils/string_utils.dart';
+import '../widgets/variable_input_dialog.dart';
+import 'changelog_screen.dart';
+import '../providers/changelog_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,6 +47,26 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
+          Consumer<ChangelogProvider>(
+            builder: (context, changelogProvider, child) {
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: changelogProvider.hasNewVersion,
+                  smallSize: 10,
+                  child: const Icon(Icons.new_releases_outlined),
+                ),
+                onPressed: () {
+                  changelogProvider.markAsViewed();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ChangelogScreen(),
+                    ),
+                  );
+                },
+                tooltip: AppLocalizations.of(context)!.newsTitle,
+              );
+            },
+          ),
           IconButton(
             icon: Icon(_getThemeIcon(themeNotifier.themeMode)),
             onPressed: () => themeNotifier.toggleTheme(),
@@ -56,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
               PopupMenuItem(value:  Locale('en'), child:  Text('English')),
               PopupMenuItem(value:  Locale('es'), child:  Text('Español')),
             ],
-            tooltip: 'Idioma',
+            tooltip: AppLocalizations.of(context)!.changeLanguage,
           ),
         ],
       ),
@@ -332,11 +356,30 @@ class _TemplateCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: template.conteudo));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.contentCopied)),
-                    );
+                  onPressed: () async {
+                    String contentToCopy = template.conteudo;
+                    final variables = StringUtils.extractVariables(contentToCopy);
+
+                    if (variables.isNotEmpty) {
+                      final values = await showDialog<Map<String, String>>(
+                        context: context,
+                        builder: (context) => VariableInputDialog(variables: variables),
+                      );
+
+                      if (values != null) {
+                        contentToCopy = StringUtils.interpolate(contentToCopy, values);
+                      } else {
+                        // User cancelled
+                        return;
+                      }
+                    }
+
+                    Clipboard.setData(ClipboardData(text: contentToCopy));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(AppLocalizations.of(context)!.contentCopied)),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.copy),
                   label: Text(AppLocalizations.of(context)!.copy),

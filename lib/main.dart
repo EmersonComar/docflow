@@ -10,6 +10,7 @@ import 'data/repositories/template_repository_impl.dart';
 import 'presentation/providers/template_provider.dart';
 import 'presentation/providers/theme_notifier.dart';
 import 'presentation/providers/locale_provider.dart';
+import 'presentation/providers/changelog_provider.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main(List<String> args) async {
@@ -23,7 +24,7 @@ void main(List<String> args) async {
 
   if (args.contains('--version') || args.contains('-v')) {
     try {
-      stdout.writeln('DocFlow version 1.3.4');
+      stdout.writeln('DocFlow version 1.3.5');
     } catch (e) {
       stdout.writeln('DocFlow version unknown');
     }
@@ -56,6 +57,9 @@ Future<void> runGui() async {
         ChangeNotifierProvider(create: (_) => LocaleProvider(database)),
         ChangeNotifierProvider(
           create: (_) => TemplateProvider(templateRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChangelogProvider(database)..load(),
         ),
       ],
       child: const MyApp(),

@@ -106,6 +106,12 @@ abstract class AppLocalizations {
   /// **'DocFlow'**
   String get appTitle;
 
+  /// No description provided for @newsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s New'**
+  String get newsTitle;
+
   /// No description provided for @filters.
   ///
   /// In en, this message translates to:
@@ -327,6 +333,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An unknown error occurred'**
   String get unknownError;
+
+  /// No description provided for @fillVariablesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill Variables'**
+  String get fillVariablesTitle;
+
+  /// No description provided for @confirmCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get confirmCopy;
+
+  /// No description provided for @changeLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get changeLanguage;
 }
 
 class _AppLocalizationsDelegate

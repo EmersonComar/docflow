@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "appTitle": "DocFlow",
+  "newsTitle": "What's New",
 
   "filters": "Filters",
   "search": "Search",
@@ -107,5 +108,8 @@
       }
     }
   },
-  "unknownError": "An unknown error occurred"
+  "unknownError": "An unknown error occurred",
+  "fillVariablesTitle": "Fill Variables",
+  "confirmCopy": "Copy",
+  "changeLanguage": "Language"
 }
