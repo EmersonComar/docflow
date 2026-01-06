@@ -40,7 +40,7 @@ apps:
 
 parts:
   docflow:
-    source: https://github.com/EmersonComar/DocFlow.git
+    source: https://github.com/emersonhcomar/docflow
     source-type: git
     plugin: flutter
     flutter-target: lib/main.dart
