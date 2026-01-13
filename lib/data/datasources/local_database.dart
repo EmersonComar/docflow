@@ -76,14 +76,32 @@ class MigrationV2 implements Migration {
   }
 }
 
+class MigrationV3 implements Migration {
+  @override
+  int get version => 3;
+
+  @override
+  Future<void> up(Database db) async {
+    await db.execute('ALTER TABLE templates ADD COLUMN markdown_enabled INTEGER NOT NULL DEFAULT 1');
+    await db.execute('ALTER TABLE templates ADD COLUMN snippets_enabled INTEGER NOT NULL DEFAULT 1');
+  }
+
+  @override
+  Future<void> down(Database db) async {
+    // SQLite doesn't support DROP COLUMN directly in older versions
+    // For rollback, we'd need to recreate the table
+  }
+}
+
 class LocalDatabase {
   Database? _database;
   
-  static const int _currentVersion = 2;
+  static const int _currentVersion = 3;
   
   final List<Migration> _migrations = [
     MigrationV1(),
     MigrationV2(),
+    MigrationV3(),
   ];
 
   Future<void> initialize() async {
@@ -192,7 +210,7 @@ class LocalDatabase {
     String searchQuery = '',
   }) async {
     final buffer = StringBuffer('''
-      SELECT t.id, t.titulo, t.conteudo, GROUP_CONCAT(tags.name) as tags
+      SELECT t.id, t.titulo, t.conteudo, t.markdown_enabled, t.snippets_enabled, GROUP_CONCAT(tags.name) as tags
       FROM templates t
       LEFT JOIN template_tags tt ON t.id = tt.template_id
       LEFT JOIN tags ON tt.tag_id = tags.id

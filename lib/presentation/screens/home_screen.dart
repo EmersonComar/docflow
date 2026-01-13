@@ -328,13 +328,19 @@ class _TemplateCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               isExpanded
-                  ? GptMarkdown(
-                      template.conteudo,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-
-                    )
+                  ? (template.markdownEnabled
+                      ? GptMarkdown(
+                          template.conteudo,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : SelectableText(
+                          template.conteudo,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ))
                   : Text(
                       template.conteudo,
                       maxLines: 3,
@@ -358,19 +364,23 @@ class _TemplateCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     String contentToCopy = template.conteudo;
-                    final variables = StringUtils.extractVariables(contentToCopy);
+                    
+                    // Only process variables if snippets are enabled
+                    if (template.snippetsEnabled) {
+                      final variables = StringUtils.extractVariables(contentToCopy);
 
-                    if (variables.isNotEmpty) {
-                      final values = await showDialog<Map<String, String>>(
-                        context: context,
-                        builder: (context) => VariableInputDialog(variables: variables),
-                      );
+                      if (variables.isNotEmpty) {
+                        final values = await showDialog<Map<String, String>>(
+                          context: context,
+                          builder: (context) => VariableInputDialog(variables: variables),
+                        );
 
-                      if (values != null) {
-                        contentToCopy = StringUtils.interpolate(contentToCopy, values);
-                      } else {
-                        // User cancelled
-                        return;
+                        if (values != null) {
+                          contentToCopy = StringUtils.interpolate(contentToCopy, values);
+                        } else {
+                          // User cancelled
+                          return;
+                        }
                       }
                     }
 

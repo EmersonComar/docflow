@@ -152,4 +152,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get changeLanguage => 'Idioma';
+
+  @override
+  String get enableMarkdown => 'Habilitar Markdown';
+
+  @override
+  String get enableSnippets => 'Habilitar Snippets';
+
+  @override
+  String get templateSettings => 'Configurações';
+
+  @override
+  String get markdownPreview => 'Pré-visualização';
+
+  @override
+  String get plainTextPreview => 'Texto simples';
 }

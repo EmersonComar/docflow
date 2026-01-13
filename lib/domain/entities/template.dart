@@ -3,12 +3,16 @@ class Template {
   final String titulo;
   final String conteudo;
   final List<String> tags;
+  final bool markdownEnabled;
+  final bool snippetsEnabled;
 
   const Template({
     this.id,
     required this.titulo,
     required this.conteudo,
     required this.tags,
+    this.markdownEnabled = true,
+    this.snippetsEnabled = true,
   });
 
   Template copyWith({
@@ -16,12 +20,16 @@ class Template {
     String? titulo,
     String? conteudo,
     List<String>? tags,
+    bool? markdownEnabled,
+    bool? snippetsEnabled,
   }) {
     return Template(
       id: id ?? this.id,
       titulo: titulo ?? this.titulo,
       conteudo: conteudo ?? this.conteudo,
       tags: tags ?? this.tags,
+      markdownEnabled: markdownEnabled ?? this.markdownEnabled,
+      snippetsEnabled: snippetsEnabled ?? this.snippetsEnabled,
     );
   }
 
@@ -31,9 +39,11 @@ class Template {
     return other is Template &&
         other.id == id &&
         other.titulo == titulo &&
-        other.conteudo == conteudo;
+        other.conteudo == conteudo &&
+        other.markdownEnabled == markdownEnabled &&
+        other.snippetsEnabled == snippetsEnabled;
   }
 
   @override
-  int get hashCode => Object.hash(id, titulo, conteudo);
+  int get hashCode => Object.hash(id, titulo, conteudo, markdownEnabled, snippetsEnabled);
 }

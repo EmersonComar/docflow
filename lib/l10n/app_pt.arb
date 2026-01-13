@@ -111,5 +111,10 @@
   "unknownError": "Ocorreu um erro desconhecido",
   "fillVariablesTitle": "Preencher Variáveis",
   "confirmCopy": "Copiar",
-  "changeLanguage": "Idioma"
+  "changeLanguage": "Idioma",
+  "enableMarkdown": "Habilitar Markdown",
+  "enableSnippets": "Habilitar Snippets",
+  "templateSettings": "Configurações",
+  "markdownPreview": "Pré-visualização",
+  "plainTextPreview": "Texto simples"
 }

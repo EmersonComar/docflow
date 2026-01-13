@@ -152,4 +152,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changeLanguage => 'Language';
+
+  @override
+  String get enableMarkdown => 'Enable Markdown';
+
+  @override
+  String get enableSnippets => 'Enable Snippets';
+
+  @override
+  String get templateSettings => 'Settings';
+
+  @override
+  String get markdownPreview => 'Preview';
+
+  @override
+  String get plainTextPreview => 'Plain text';
 }

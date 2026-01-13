@@ -26,6 +26,8 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
   
   String _markdownPreview = '';
   String? _errorMessage;
+  late bool _markdownEnabled;
+  late bool _snippetsEnabled;
 
   @override
   void initState() {
@@ -34,6 +36,8 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
     _conteudoController = TextEditingController(text: widget.template?.conteudo ?? '');
     _tagsController = TextEditingController(text: widget.template?.tags.join(', ') ?? '');
     _markdownPreview = _conteudoController.text;
+    _markdownEnabled = widget.template?.markdownEnabled ?? true;
+    _snippetsEnabled = widget.template?.snippetsEnabled ?? true;
     
     _conteudoController.addListener(_onContentChanged);
   }
@@ -100,6 +104,8 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
           .map((e) => e.trim())
           .where((s) => s.isNotEmpty)
           .toList(),
+      markdownEnabled: _markdownEnabled,
+      snippetsEnabled: _snippetsEnabled,
     );
 
     if (isEditing) {
@@ -179,14 +185,37 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: SingleChildScrollView(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: GptMarkdown(
-                                    _markdownPreview,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      _markdownEnabled 
+                                          ? AppLocalizations.of(context)!.markdownPreview
+                                          : AppLocalizations.of(context)!.plainTextPreview,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: colorScheme.outline,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: _markdownEnabled
+                                            ? GptMarkdown(
+                                                _markdownPreview,
+                                                style: Theme.of(context).textTheme.bodyMedium,
+                                              )
+                                            : SelectableText(
+                                                _markdownPreview,
+                                                style: Theme.of(context).textTheme.bodyMedium,
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -212,6 +241,57 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
                   border: const OutlineInputBorder(),
                   filled: true,
                 ),
+              ),
+              const SizedBox(height: 8),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(
+                  AppLocalizations.of(context)!.templateSettings,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                leading: const Icon(Icons.settings, size: 20),
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CheckboxListTile(
+                          title: Text(
+                            AppLocalizations.of(context)!.enableMarkdown,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          value: _markdownEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _markdownEnabled = value ?? true;
+                            });
+                          },
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      ),
+                      Expanded(
+                        child: CheckboxListTile(
+                          title: Text(
+                            AppLocalizations.of(context)!.enableSnippets,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          value: _snippetsEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _snippetsEnabled = value ?? true;
+                            });
+                          },
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

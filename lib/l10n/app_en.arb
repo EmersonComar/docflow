@@ -111,5 +111,10 @@
   "unknownError": "An unknown error occurred",
   "fillVariablesTitle": "Fill Variables",
   "confirmCopy": "Copy",
-  "changeLanguage": "Language"
+  "changeLanguage": "Language",
+  "enableMarkdown": "Enable Markdown",
+  "enableSnippets": "Enable Snippets",
+  "templateSettings": "Settings",
+  "markdownPreview": "Preview",
+  "plainTextPreview": "Plain text"
 }

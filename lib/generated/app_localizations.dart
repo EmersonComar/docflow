@@ -351,6 +351,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get changeLanguage;
+
+  /// No description provided for @enableMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Markdown'**
+  String get enableMarkdown;
+
+  /// No description provided for @enableSnippets.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Snippets'**
+  String get enableSnippets;
+
+  /// No description provided for @templateSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get templateSettings;
+
+  /// No description provided for @markdownPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get markdownPreview;
+
+  /// No description provided for @plainTextPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain text'**
+  String get plainTextPreview;
 }
 
 class _AppLocalizationsDelegate

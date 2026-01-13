@@ -6,6 +6,8 @@ class TemplateModel extends Template {
     required super.titulo,
     required super.conteudo,
     required super.tags,
+    super.markdownEnabled = true,
+    super.snippetsEnabled = true,
   });
 
   factory TemplateModel.fromEntity(Template template) {
@@ -14,6 +16,8 @@ class TemplateModel extends Template {
       titulo: template.titulo,
       conteudo: template.conteudo,
       tags: template.tags,
+      markdownEnabled: template.markdownEnabled,
+      snippetsEnabled: template.snippetsEnabled,
     );
   }
 
@@ -28,6 +32,8 @@ class TemplateModel extends Template {
       titulo: map['titulo'] as String,
       conteudo: map['conteudo'] as String,
       tags: tags,
+      markdownEnabled: (map['markdown_enabled'] as int?) == 1,
+      snippetsEnabled: (map['snippets_enabled'] as int?) == 1,
     );
   }
 
@@ -36,6 +42,8 @@ class TemplateModel extends Template {
       if (id != null) 'id': id,
       'titulo': titulo,
       'conteudo': conteudo,
+      'markdown_enabled': markdownEnabled ? 1 : 0,
+      'snippets_enabled': snippetsEnabled ? 1 : 0,
     };
   }
 
@@ -45,6 +53,8 @@ class TemplateModel extends Template {
       titulo: titulo,
       conteudo: conteudo,
       tags: tags,
+      markdownEnabled: markdownEnabled,
+      snippetsEnabled: snippetsEnabled,
     );
   }
 }
