@@ -24,18 +24,42 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final FocusNode _searchFocusNode;
+  late final FocusNode _rootFocusNode;
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode = FocusNode();
+    _rootFocusNode = FocusNode();
+    _rootFocusNode.addListener(_onRootFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TemplateProvider>().initialize();
+      _rootFocusNode.requestFocus();
     });
+  }
+
+  void _onRootFocusChange() {
+    if (!_rootFocusNode.hasFocus) {
+      final primary = FocusManager.instance.primaryFocus;
+      final isDescendant = primary != null &&
+          primary.ancestors.contains(_rootFocusNode);
+      final isDialog = primary != null &&
+          primary.context != null &&
+          ModalRoute.of(primary.context!) != ModalRoute.of(context);
+      if (!isDescendant && !isDialog) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_rootFocusNode.hasFocus) {
+            _rootFocusNode.requestFocus();
+          }
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _rootFocusNode.removeListener(_onRootFocusChange);
+    _rootFocusNode.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
@@ -76,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final localeProvider = context.watch<LocaleProvider>();
 
     return Focus(
+      focusNode: _rootFocusNode,
       autofocus: true,
       onKeyEvent: (FocusNode node, KeyEvent event) {
         if (event is KeyDownEvent) {
