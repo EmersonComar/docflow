@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:docflow/generated/app_localizations.dart';
@@ -71,7 +72,7 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
       _errorMessage = null;
     });
 
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['md', 'markdown'],
     );
@@ -124,8 +125,25 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
     final isEditing = widget.template != null;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AlertDialog(
-      title: Text(isEditing ? AppLocalizations.of(context)!.editTemplate : AppLocalizations.of(context)!.newTemplate),
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (FocusNode node, KeyEvent event) {
+        if (event is KeyDownEvent) {
+          final isModifierPressed = HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
+          if (isModifierPressed) {
+            if (event.logicalKey == LogicalKeyboardKey.keyS) {
+              _saveTemplate();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyI) {
+              _importMarkdown();
+              return KeyEventResult.handled;
+            }
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AlertDialog(
+        title: Text(isEditing ? AppLocalizations.of(context)!.editTemplate : AppLocalizations.of(context)!.newTemplate),
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         height: MediaQuery.of(context).size.height * 0.7,
@@ -317,6 +335,6 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
           label: Text(AppLocalizations.of(context)!.save),
         ),
       ],
-    );
+    ));
   }
 }

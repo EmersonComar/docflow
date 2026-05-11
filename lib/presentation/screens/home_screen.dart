@@ -23,12 +23,44 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final FocusNode _searchFocusNode;
+
   @override
   void initState() {
     super.initState();
+    _searchFocusNode = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TemplateProvider>().initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _showChangelog() {
+    context.read<ChangelogProvider>().markAsViewed();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ChangelogScreen(),
+      ),
+    );
+  }
+
+  void _cycleLanguage() {
+    final provider = context.read<LocaleProvider>();
+    final currentCode = provider.locale?.languageCode ?? 'pt';
+    Locale nextLocale;
+    if (currentCode == 'pt') {
+      nextLocale = const Locale('en');
+    } else if (currentCode == 'en') {
+      nextLocale = const Locale('es');
+    } else {
+      nextLocale = const Locale('pt');
+    }
+    provider.setLocale(nextLocale);
   }
 
   void _showAddTemplateDialog(BuildContext context) {
@@ -43,8 +75,34 @@ class _HomeScreenState extends State<HomeScreen> {
     final themeNotifier = context.watch<ThemeNotifier>();
     final localeProvider = context.watch<LocaleProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (FocusNode node, KeyEvent event) {
+        if (event is KeyDownEvent) {
+          final isModifierPressed = HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
+          if (isModifierPressed) {
+            if (event.logicalKey == LogicalKeyboardKey.keyN) {
+              _showAddTemplateDialog(context);
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
+              _searchFocusNode.requestFocus();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyT) {
+              themeNotifier.toggleTheme();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyH) {
+              _showChangelog();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyL) {
+              _cycleLanguage();
+              return KeyEventResult.handled;
+            }
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
           Consumer<ChangelogProvider>(
@@ -55,14 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   smallSize: 10,
                   child: const Icon(Icons.new_releases_outlined),
                 ),
-                onPressed: () {
-                  changelogProvider.markAsViewed();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ChangelogScreen(),
-                    ),
-                  );
-                },
+                onPressed: _showChangelog,
                 tooltip: AppLocalizations.of(context)!.newsTitle,
               );
             },
@@ -72,10 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => themeNotifier.toggleTheme(),
             tooltip: AppLocalizations.of(context)!.changeTheme,
           ),
-          PopupMenuButton<Locale?>(
+          PopupMenuButton<Locale>(
             onSelected: (locale) => localeProvider.setLocale(locale),
             itemBuilder: (context) => const [
-              PopupMenuItem(value: null, child: Text('System')),
               PopupMenuItem(value:  Locale('pt'), child:  Text('Português')),
               PopupMenuItem(value:  Locale('en'), child:  Text('English')),
               PopupMenuItem(value:  Locale('es'), child:  Text('Español')),
@@ -84,10 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: const Row(
+      body: Row(
         children: [
-          SizedBox(width: 250, child: FilterPanel()),
-          Expanded(child: _TemplateList()),
+          SizedBox(width: 250, child: FilterPanel(searchFocusNode: _searchFocusNode)),
+          const Expanded(child: _TemplateList()),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -95,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tooltip: AppLocalizations.of(context)!.newTemplateFab,
         child: const Icon(Icons.add),
       ),
-    );
+    ));
   }
 
   IconData _getThemeIcon(ThemeMode mode) {

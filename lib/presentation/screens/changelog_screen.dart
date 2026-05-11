@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../generated/app_localizations.dart';
 import '../utils/changelog_data.dart';
 
@@ -7,7 +8,19 @@ class ChangelogScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (FocusNode node, KeyEvent event) {
+        if (event is KeyDownEvent) {
+          final isModifierPressed = HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
+          if (isModifierPressed && event.logicalKey == LogicalKeyboardKey.keyH) {
+            Navigator.of(context).pop();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.newsTitle),
       ),
@@ -28,7 +41,7 @@ class ChangelogScreen extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 8),
-              ...version.changes.map(
+              ...version.getChanges(Localizations.localeOf(context).languageCode).map(
                 (change) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
@@ -49,6 +62,6 @@ class ChangelogScreen extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }

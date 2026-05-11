@@ -4,7 +4,9 @@ import 'package:docflow/generated/app_localizations.dart';
 import '../providers/template_provider.dart';
 
 class FilterPanel extends StatelessWidget {
-  const FilterPanel({super.key});
+  final FocusNode? searchFocusNode;
+
+  const FilterPanel({super.key, this.searchFocusNode});
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,7 @@ class FilterPanel extends StatelessWidget {
             Text(AppLocalizations.of(context)!.filters, style: textTheme.titleLarge),
             const SizedBox(height: 16),
             TextField(
+              focusNode: searchFocusNode,
               decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.search,
                 prefixIcon: const Icon(Icons.search),
