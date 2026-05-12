@@ -12,6 +12,8 @@ class TemplateRepositoryImpl implements TemplateRepository {
 
   TemplateRepositoryImpl(this._database);
 
+  TemplateRepositoryImpl.preInitialized(this._database) : _initialized = true;
+
   @override
   Future<Result<void>> ensureInitialized() async {
     if (_initialized) return Result.success(null);

@@ -88,16 +88,19 @@ class MigrationV3 implements Migration {
 
   @override
   Future<void> down(Database db) async {
-    // SQLite doesn't support DROP COLUMN directly in older versions
-    // For rollback, we'd need to recreate the table
   }
 }
 
 class LocalDatabase {
   Database? _database;
-  
+  final bool _inMemory;
+
   static const int _currentVersion = 3;
-  
+
+  LocalDatabase() : _inMemory = false;
+
+  LocalDatabase.inMemory() : _inMemory = true;
+
   final List<Migration> _migrations = [
     MigrationV1(),
     MigrationV2(),
@@ -106,6 +109,17 @@ class LocalDatabase {
 
   Future<void> initialize() async {
     if (_database != null) return;
+
+    if (_inMemory) {
+      _database = await openDatabase(
+        inMemoryDatabasePath,
+        version: _currentVersion,
+        onConfigure: _onConfigure,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+      return;
+    }
 
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final path = join(documentsDirectory.path, 'templates.db');
