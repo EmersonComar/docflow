@@ -381,6 +381,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plain text'**
   String get plainTextPreview;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to DocFlow!'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All your templates in one place.\nChoose where to store your data file.'**
+  String get welcomeSubtitle;
+
+  /// No description provided for @createNewDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new file'**
+  String get createNewDatabase;
+
+  /// No description provided for @openExistingDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Open existing file'**
+  String get openExistingDatabase;
+
+  /// No description provided for @openAnotherFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open another file'**
+  String get openAnotherFile;
+
+  /// No description provided for @currentFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File: {name}'**
+  String currentFile(String name);
+
+  /// No description provided for @databaseNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found. Please choose another.'**
+  String get databaseNotFound;
+
+  /// No description provided for @selectSaveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose save location'**
+  String get selectSaveLocation;
+
+  /// No description provided for @selectDatabaseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Select database file'**
+  String get selectDatabaseFile;
+
+  /// No description provided for @invalidDatabaseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file is not a valid database.'**
+  String get invalidDatabaseFile;
 }
 
 class _AppLocalizationsDelegate

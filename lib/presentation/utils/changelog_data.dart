@@ -17,6 +17,23 @@ class BackendVersion {
 
 const List<BackendVersion> changelogData = [
   BackendVersion(
+    version: '2.1.0',
+    localizedChanges: {
+      'pt': [
+        'Implementação da seleção dinâmica de banco de dados, permitindo criar múltiplos arquivos .db e escolher qual abrir.',
+        'Nova tela de boas-vindas para o setup inicial.',
+      ],
+      'en': [
+        'Implementation of dynamic database selection, allowing creating multiple .db files and choosing which one to open.',
+        'New welcome screen for initial setup.',
+      ],
+      'es': [
+        'Implementación de selección dinámica de base de datos, permitiendo crear múltiples archivos .db y elegir cuál abrir.',
+        'Nueva pantalla de bienvenida para la configuración inicial.',
+      ],
+    },
+  ),
+  BackendVersion(
     version: '2.0.0',
     localizedChanges: {
       'pt': [

@@ -197,3 +197,37 @@ Após editar os `.arb`, rode `flutter gen-l10n` ou simplesmente `flutter run` pa
 - [ ] Strings novas adicionadas nos três arquivos `.arb`
 - [ ] Migrations documentadas e testadas (se houver mudança de schema)
 - [ ] Mocks regenerados (se `TemplateRepository` foi alterado)
+
+---
+
+## AppConfigService — Configuração do Aplicativo
+
+Persistência de configurações **independente do banco de dados** (como o caminho do último `.db` usado):
+
+- Arquivo: `lib/core/services/app_config_service.dart`
+- Localização: `~/.local/share/docflow/app_config.json`
+- Injetar `configDir` para testes: `AppConfigService(configDir: tempDir)`
+
+```dart
+// Produção
+final config = AppConfigService();
+
+// Testes
+final config = AppConfigService(configDir: Directory.systemTemp.createTempSync('test_'));
+```
+
+## DatabaseProvider — Gerenciamento do Banco Ativo
+
+O `DatabaseProvider` é a raiz de todos os providers dependentes de banco:
+
+```
+DatabaseProvider
+   ├── ThemeNotifier
+   ├── LocaleProvider
+   ├── ChangelogProvider
+   └── TemplateProvider (via TemplateRepositoryImpl)
+```
+
+- Para criar um novo banco (com seed de dados de exemplo): `DatabaseProvider.createDatabase(path)`
+- Para abrir um banco existente (sem seed): `DatabaseProvider.openDatabase(path)`
+- Para abertura automática na inicialização: `DatabaseProvider.tryAutoOpen()`

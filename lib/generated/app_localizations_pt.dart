@@ -167,4 +167,38 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get plainTextPreview => 'Texto simples';
+
+  @override
+  String get welcomeTitle => 'Bem-vindo ao DocFlow!';
+
+  @override
+  String get welcomeSubtitle =>
+      'Seus templates em um único lugar.\nEscolha onde guardar seu arquivo de dados.';
+
+  @override
+  String get createNewDatabase => 'Criar novo arquivo';
+
+  @override
+  String get openExistingDatabase => 'Abrir arquivo existente';
+
+  @override
+  String get openAnotherFile => 'Abrir outro arquivo';
+
+  @override
+  String currentFile(String name) {
+    return 'Arquivo: $name';
+  }
+
+  @override
+  String get databaseNotFound => 'Arquivo não encontrado. Escolha outro.';
+
+  @override
+  String get selectSaveLocation => 'Escolher local para salvar';
+
+  @override
+  String get selectDatabaseFile => 'Selecionar arquivo de banco de dados';
+
+  @override
+  String get invalidDatabaseFile =>
+      'O arquivo selecionado não é um banco de dados válido.';
 }

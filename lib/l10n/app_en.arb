@@ -116,5 +116,23 @@
   "enableSnippets": "Enable Snippets",
   "templateSettings": "Settings",
   "markdownPreview": "Preview",
-  "plainTextPreview": "Plain text"
+  "plainTextPreview": "Plain text",
+
+  "welcomeTitle": "Welcome to DocFlow!",
+  "welcomeSubtitle": "All your templates in one place.\nChoose where to store your data file.",
+  "createNewDatabase": "Create new file",
+  "openExistingDatabase": "Open existing file",
+  "openAnotherFile": "Open another file",
+  "currentFile": "File: {name}",
+  "@currentFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "databaseNotFound": "File not found. Please choose another.",
+  "selectSaveLocation": "Choose save location",
+  "selectDatabaseFile": "Select database file",
+  "invalidDatabaseFile": "The selected file is not a valid database."
 }

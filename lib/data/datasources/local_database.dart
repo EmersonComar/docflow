@@ -94,12 +94,16 @@ class MigrationV3 implements Migration {
 class LocalDatabase {
   Database? _database;
   final bool _inMemory;
+  final String? _customPath;
 
   static const int _currentVersion = 3;
 
-  LocalDatabase() : _inMemory = false;
+  LocalDatabase() : _inMemory = false, _customPath = null;
 
-  LocalDatabase.inMemory() : _inMemory = true;
+  LocalDatabase.inMemory() : _inMemory = true, _customPath = null;
+
+  /// Creates a [LocalDatabase] at an explicit [path] chosen by the user.
+  LocalDatabase.withPath(String path) : _inMemory = false, _customPath = path;
 
   final List<Migration> _migrations = [
     MigrationV1(),
@@ -121,8 +125,13 @@ class LocalDatabase {
       return;
     }
 
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentsDirectory.path, 'templates.db');
+    final String path;
+    if (_customPath != null) {
+      path = _customPath;
+    } else {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      path = join(documentsDirectory.path, 'templates.db');
+    }
 
     _database = await openDatabase(
       path,

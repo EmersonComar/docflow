@@ -1,6 +1,8 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../providers/database_provider.dart';
 import '../providers/locale_provider.dart';
 import 'package:docflow/generated/app_localizations.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -87,6 +89,19 @@ class _HomeScreenState extends State<HomeScreen> {
     provider.setLocale(nextLocale);
   }
 
+  Future<void> _openAnotherFile(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await FilePicker.pickFiles(
+      dialogTitle: l10n.selectDatabaseFile,
+      type: FileType.any,
+      allowMultiple: false,
+    );
+    if (result == null || !context.mounted) return;
+    await context.read<DatabaseProvider>().openDatabase(
+      result.files.single.path!,
+    );
+  }
+
   void _showAddTemplateDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -98,6 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final themeNotifier = context.watch<ThemeNotifier>();
     final localeProvider = context.watch<LocaleProvider>();
+    final dbProvider = context.watch<DatabaseProvider>();
+    final dbName = dbProvider.currentDbName;
 
     return Focus(
       focusNode: _rootFocusNode,
@@ -128,7 +145,20 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.appTitle),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(AppLocalizations.of(context)!.appTitle),
+            if (dbName != null)
+              Text(
+                dbName,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
         actions: [
           Consumer<ChangelogProvider>(
             builder: (context, changelogProvider, child) {
@@ -142,6 +172,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: AppLocalizations.of(context)!.newsTitle,
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_open_rounded),
+            onPressed: () => _openAnotherFile(context),
+            tooltip: AppLocalizations.of(context)!.openAnotherFile,
           ),
           IconButton(
             icon: Icon(_getThemeIcon(themeNotifier.themeMode)),

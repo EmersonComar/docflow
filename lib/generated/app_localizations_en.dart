@@ -167,4 +167,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plainTextPreview => 'Plain text';
+
+  @override
+  String get welcomeTitle => 'Welcome to DocFlow!';
+
+  @override
+  String get welcomeSubtitle =>
+      'All your templates in one place.\nChoose where to store your data file.';
+
+  @override
+  String get createNewDatabase => 'Create new file';
+
+  @override
+  String get openExistingDatabase => 'Open existing file';
+
+  @override
+  String get openAnotherFile => 'Open another file';
+
+  @override
+  String currentFile(String name) {
+    return 'File: $name';
+  }
+
+  @override
+  String get databaseNotFound => 'File not found. Please choose another.';
+
+  @override
+  String get selectSaveLocation => 'Choose save location';
+
+  @override
+  String get selectDatabaseFile => 'Select database file';
+
+  @override
+  String get invalidDatabaseFile =>
+      'The selected file is not a valid database.';
 }
