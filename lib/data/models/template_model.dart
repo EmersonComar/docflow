@@ -32,8 +32,8 @@ class TemplateModel extends Template {
       titulo: map['titulo'] as String,
       conteudo: map['conteudo'] as String,
       tags: tags,
-      markdownEnabled: (map['markdown_enabled'] as int?) == 1,
-      snippetsEnabled: (map['snippets_enabled'] as int?) == 1,
+      markdownEnabled: map['markdown_enabled'] == 1 || map['markdown_enabled'] == true,
+      snippetsEnabled: map['snippets_enabled'] == 1 || map['snippets_enabled'] == true,
     );
   }
 

@@ -17,6 +17,23 @@ class BackendVersion {
 
 const List<BackendVersion> changelogData = [
   BackendVersion(
+    version: '2.2.0',
+    localizedChanges: {
+      'pt': [
+        'Suporte a PostgreSQL: agora é possível conectar o DocFlow a um banco de dados remoto PostgreSQL através da tela de boas-vindas.',
+        'Segurança aprimorada: as credenciais de acesso remoto são protegidas por criptografia AES-256 com chave gerenciada pelo keyring do sistema operacional (GNOME Keyring / KWallet). A chave nunca fica armazenada no código ou em disco.',
+      ],
+      'en': [
+        'PostgreSQL support: it is now possible to connect DocFlow to a remote PostgreSQL database through the welcome screen.',
+        'Enhanced security: remote access credentials are protected by AES-256 encryption with the key managed by the operating system keyring (GNOME Keyring / KWallet). The key is never stored in the code or on disk.',
+      ],
+      'es': [
+        'Soporte para PostgreSQL: ahora es posible conectar DocFlow a una base de datos PostgreSQL remota a través de la pantalla de bienvenida.',
+        'Seguridad mejorada: las credenciales de acceso remoto están protegidas por cifrado AES-256 con la clave gestionada por el keyring del sistema operativo (GNOME Keyring / KWallet). La clave nunca se almacena en el código ni en disco.',
+      ],
+    },
+  ),
+  BackendVersion(
     version: '2.1.0',
     localizedChanges: {
       'pt': [

@@ -7,22 +7,19 @@ import 'changelog_provider.dart';
 import 'locale_provider.dart';
 import 'template_provider.dart';
 import 'theme_notifier.dart';
+import '../../data/models/postgres_credentials.dart';
+import '../../data/datasources/drivers/driver_factory.dart';
 
 enum DatabaseStatus { unset, loading, ready, error }
 
-/// Central provider that manages the lifecycle of the active database file.
-///
-/// It holds the [LocalDatabase] and all providers that depend on it:
-/// [ThemeNotifier], [LocaleProvider], [ChangelogProvider], [TemplateProvider].
-///
-/// When the user picks a new database file, [switchDatabase] replaces all
-/// sub-providers and notifies listeners so [MyApp] rebuilds the whole tree.
+
 class DatabaseProvider extends ChangeNotifier {
   final AppConfigService _configService;
 
   DatabaseStatus _status = DatabaseStatus.unset;
   String? _error;
   String? _currentDbPath;
+  String? _currentPostgresHost;
 
   LocalDatabase? _database;
   ThemeNotifier? _themeNotifier;
@@ -32,26 +29,35 @@ class DatabaseProvider extends ChangeNotifier {
 
   DatabaseProvider(this._configService);
 
-  // ─── Getters ─────────────────────────────────────────────────────────────
 
   DatabaseStatus get status => _status;
   String? get error => _error;
 
-  /// The filename (basename) of the active database, e.g. `meustemplate.db`.
-  String? get currentDbName =>
-      _currentDbPath != null ? File(_currentDbPath!).uri.pathSegments.last : null;
+  String? get currentDbName {
+    if (_currentDbPath != null) {
+      return File(_currentDbPath!).uri.pathSegments.last;
+    }
+    if (_currentPostgresHost != null) {
+      return 'postgres@$_currentPostgresHost';
+    }
+    return null;
+  }
 
   ThemeNotifier? get themeNotifier => _themeNotifier;
   LocaleProvider? get localeProvider => _localeProvider;
   ChangelogProvider? get changelogProvider => _changelogProvider;
   TemplateProvider? get templateProvider => _templateProvider;
 
-  // ─── Initialization ───────────────────────────────────────────────────────
 
-  /// Called once by [main]. Reads the saved path and opens the database if
-  /// the file still exists; otherwise leaves status as [DatabaseStatus.unset]
-  /// so [WelcomeScreen] is shown.
   Future<void> tryAutoOpen() async {
+    // Try Postgres first
+    final postgresCreds = await _configService.loadPostgresCredentials();
+    if (postgresCreds != null) {
+      await openPostgresDatabase(postgresCreds);
+      return;
+    }
+
+    // Fallback to SQLite
     final savedPath = await _configService.loadLastDbPath();
     if (savedPath == null || !File(savedPath).existsSync()) {
       _status = DatabaseStatus.unset;
@@ -61,19 +67,54 @@ class DatabaseProvider extends ChangeNotifier {
     await _open(savedPath, seedIfNew: false);
   }
 
-  // ─── Public actions ───────────────────────────────────────────────────────
-
-  /// Creates a new database at [path]. Seeds initial data since the file is new.
   Future<void> createDatabase(String path) async {
     await _open(path, seedIfNew: true);
   }
-
-  /// Opens an existing database at [path]. No seed is applied.
   Future<void> openDatabase(String path) async {
     await _open(path, seedIfNew: false);
   }
 
-  // ─── Internal ─────────────────────────────────────────────────────────────
+  Future<void> openPostgresDatabase(PostgresCredentials credentials) async {
+    _status = DatabaseStatus.loading;
+    _error = null;
+    notifyListeners();
+
+    // Clear previous SQLite path before trying Postgres
+    await _configService.clearLastDbPath();
+    _currentDbPath = null;
+
+    try {
+      await _database?.close();
+
+      final driver = DriverFactory.createRemoteDriver(
+        DatabaseType.postgresql,
+        host: credentials.host,
+        port: credentials.port,
+        database: credentials.database,
+        username: credentials.username,
+        password: credentials.password,
+      );
+
+      final db = LocalDatabase.withDriver(driver);
+      await db.initialize();
+
+      await _initializeComponents(db);
+
+      _database = db;
+      _currentDbPath = null;
+      _currentPostgresHost = credentials.host;
+
+      await _configService.savePostgresCredentials(credentials);
+      await _configService.clearLastDbPath();
+
+      _status = DatabaseStatus.ready;
+    } catch (e) {
+      _status = DatabaseStatus.error;
+      _error = e.toString();
+    }
+
+    notifyListeners();
+  }
 
   Future<void> _open(String path, {required bool seedIfNew}) async {
     _status = DatabaseStatus.loading;
@@ -81,32 +122,19 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Close the previous database gracefully.
       await _database?.close();
 
       final db = LocalDatabase.withPath(path);
       await db.initialize();
 
-      final themeNotifier = ThemeNotifier(db);
-      await themeNotifier.loadTheme();
-
-      final localeProvider = LocaleProvider(db);
-      final changelogProvider = ChangelogProvider(db)..load();
-
-      final repository = seedIfNew
-          ? TemplateRepositoryImpl(db)           // uses ensureInitialized → seeds data
-          : TemplateRepositoryImpl.preInitialized(db); // already initialized, no seed
-
-      final templateProvider = TemplateProvider(repository);
+      await _initializeComponents(db, seedTemplates: seedIfNew);
 
       _database = db;
-      _themeNotifier = themeNotifier;
-      _localeProvider = localeProvider;
-      _changelogProvider = changelogProvider;
-      _templateProvider = templateProvider;
       _currentDbPath = path;
+      _currentPostgresHost = null;
 
       await _configService.saveLastDbPath(path);
+      await _configService.clearPostgresCredentials();
 
       _status = DatabaseStatus.ready;
     } catch (e) {
@@ -120,5 +148,40 @@ class DatabaseProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> disconnect() async {
+    await _database?.close();
+    _database = null;
+    _currentDbPath = null;
+    _currentPostgresHost = null;
+    _status = DatabaseStatus.unset;
+    _error = null;
+
+    // Clear saved configs to avoid auto-reopening the same database
+    await _configService.clearLastDbPath();
+    await _configService.clearPostgresCredentials();
+
+    notifyListeners();
+  }
+
+  Future<void> _initializeComponents(LocalDatabase db,
+      {bool seedTemplates = false}) async {
+    final themeNotifier = ThemeNotifier(db);
+    await themeNotifier.loadTheme();
+
+    final localeProvider = LocaleProvider(db);
+    final changelogProvider = ChangelogProvider(db)..load();
+
+    final repository = seedTemplates
+        ? TemplateRepositoryImpl(db)
+        : TemplateRepositoryImpl.preInitialized(db);
+
+    final templateProvider = TemplateProvider(repository);
+
+    _themeNotifier = themeNotifier;
+    _localeProvider = localeProvider;
+    _changelogProvider = changelogProvider;
+    _templateProvider = templateProvider;
   }
 }

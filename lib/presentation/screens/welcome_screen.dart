@@ -2,7 +2,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:docflow/generated/app_localizations.dart';
+import 'package:docflow/data/models/postgres_credentials.dart';
+import 'package:docflow/core/services/app_config_service.dart';
 import '../providers/database_provider.dart';
+import '../widgets/external_connection_form.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -11,8 +14,22 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
   bool _isWorking = false;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _createNew() async {
     final l10n = AppLocalizations.of(context)!;
@@ -47,6 +64,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     await context.read<DatabaseProvider>().openDatabase(path);
 
     if (mounted) setState(() => _isWorking = false);
+  }
+
+  Future<void> _connectPostgres(PostgresCredentials credentials) async {
+    setState(() => _isWorking = true);
+
+    try {
+      final configService = AppConfigService();
+      await configService.savePostgresCredentials(credentials);
+
+      if (mounted) {
+        await context
+            .read<DatabaseProvider>()
+            .openPostgresDatabase(credentials);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao conectar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isWorking = false);
+      }
+    }
   }
 
   @override
@@ -96,6 +138,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
                 const SizedBox(height: 40),
 
+                // Tab selector: Local or External
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: colorScheme.outlineVariant,
+                      ),
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    tabs: [
+                      Tab(
+                        icon: const Icon(Icons.folder_open),
+                        text: 'Local',
+                      ),
+                      Tab(
+                        icon: const Icon(Icons.cloud),
+                        text: 'PostgreSQL',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 // Error banner
                 if (hasError) ...[
                   Container(
@@ -128,28 +195,47 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 // Loading indicator or buttons
                 if (_isWorking || dbProvider.status == DatabaseStatus.loading)
                   const Center(child: CircularProgressIndicator())
-                else ...[
-                  // Create new
-                  FilledButton.icon(
-                    onPressed: _createNew,
-                    icon: const Icon(Icons.create_new_folder_rounded),
-                    label: Text(l10n.createNewDatabase),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                else
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Local tab
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: _createNew,
+                              icon: const Icon(Icons.create_new_folder_rounded),
+                              label: Text(l10n.createNewDatabase),
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: _openExisting,
+                              icon: const Icon(Icons.folder_open_rounded),
+                              label: Text(l10n.openExistingDatabase),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // PostgreSQL tab
+                        SingleChildScrollView(
+                          child: ExternalConnectionForm(
+                            onConnect: _connectPostgres,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
 
-                  // Open existing
-                  OutlinedButton.icon(
-                    onPressed: _openExisting,
-                    icon: const Icon(Icons.folder_open_rounded),
-                    label: Text(l10n.openExistingDatabase),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

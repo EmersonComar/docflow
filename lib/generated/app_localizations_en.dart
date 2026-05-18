@@ -201,4 +201,57 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get invalidDatabaseFile =>
       'The selected file is not a valid database.';
+
+  @override
+  String get postgresConnectionTitle => 'PostgreSQL Connection';
+
+  @override
+  String get postgresConnectionSubtitle =>
+      'Connect to an external PostgreSQL database';
+
+  @override
+  String get serverIpLabel => 'Server IP / Hostname';
+
+  @override
+  String get portLabel => 'Port';
+
+  @override
+  String get databaseLabel => 'Database';
+
+  @override
+  String get usernameLabel => 'Username';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get connectButton => 'Connect';
+
+  @override
+  String get connecting => 'Connecting...';
+
+  @override
+  String get allFieldsRequired => 'All fields are required';
+
+  @override
+  String get invalidPort => 'Invalid port (1-65535)';
+
+  @override
+  String connectionError(String error) {
+    return 'Connection error: $error';
+  }
+
+  @override
+  String get aboutTitle => 'About DocFlow';
+
+  @override
+  String appVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get supportLabel => 'Suggestions or Bugs (GitHub)';
+
+  @override
+  String get settingsMenu => 'Settings';
 }

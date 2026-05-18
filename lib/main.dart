@@ -23,7 +23,7 @@ void main(List<String> args) async {
 
   if (args.contains('--version') || args.contains('-v')) {
     try {
-      stdout.writeln('DocFlow version 2.1.0');
+      stdout.writeln('DocFlow version 2.2.0');
     } catch (e) {
       stdout.writeln('DocFlow version unknown');
     }
@@ -42,7 +42,6 @@ Future<void> runGui() async {
   final configService = AppConfigService();
   final databaseProvider = DatabaseProvider(configService);
 
-  // Attempt to open the last used database before showing the UI.
   await databaseProvider.tryAutoOpen();
 
   final lifecycleObserver = AppLifecycleObserver(databaseProvider);
@@ -64,8 +63,7 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
-      // Close the active database gracefully on app exit.
-      _databaseProvider.themeNotifier; // just a reference — close is internal
+      _databaseProvider.themeNotifier; 
     }
   }
 }
@@ -77,7 +75,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final dbProvider = context.watch<DatabaseProvider>();
 
-    // When the database is ready, build the full provider subtree.
     if (dbProvider.status == DatabaseStatus.ready) {
       return MultiProvider(
         providers: [
@@ -126,7 +123,6 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    // WelcomeScreen shown when no database is configured or while loading.
     return MaterialApp(
       title: 'DocFlow',
       localizationsDelegates: const [

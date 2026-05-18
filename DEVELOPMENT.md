@@ -35,9 +35,13 @@ Para cada nova funcionalidade, siga esta ordem:
 
 ### 2. Data
 - Atualize o **model** em `lib/data/models/` (`fromMap`, `toMap`)
-- Aplique **migrations** se necessário em `lib/data/datasources/local_database.dart`  
-  (incrementar `_currentVersion` e criar nova classe `MigrationVN`)
+- **NÃO** manipule SQL direto — use apenas `DatabaseDriver`
+- Novos campos no banco: use `DatabaseDriver.insertTemplate()`, etc.
 - Implemente o método no **repositório** em `lib/data/repositories/`
+- **Migrations são gerenciadas pelo `SqliteDriftDriver`** (não edite manualmente)
+
+**Importante:** O projeto agora é agnóstico de banco de dados através de `DatabaseDriver`.
+Veja [ARCHITECTURE.md](./ARCHITECTURE.md) para detalhes e como adicionar novos bancos.
 
 ### 3. Provider
 - Exponha o novo comportamento no `TemplateProvider` ou crie um novo provider
@@ -56,6 +60,8 @@ flutter test      # deve retornar "All tests passed!"
 ```
 
 **Nunca** faça commit com warnings no `flutter analyze` ou testes falhando.
+
+**Veja também:** [SECURITY.md](./SECURITY.md) — Criptografia e gerenciamento de chaves.
 
 ---
 
@@ -114,13 +120,13 @@ tearDown(() async {
 
 ### Mocks — quando regenerar
 
-Sempre que o contrato de `TemplateRepository` mudar (novo método, assinatura alterada), rode:
+Sempre que o contrato de `TemplateRepository` ou a interface de `FlutterSecureStorage` mudar (novo método, assinatura alterada, atualização do pacote), rode:
 
 ```bash
 dart run build_runner build
 ```
 
-O arquivo `test/presentation/template_provider_test.mocks.dart` é **gerado automaticamente** — nunca o edite manualmente.
+Os arquivos `*.mocks.dart` são **gerados automaticamente** — nunca os edite manualmente.
 
 ---
 
@@ -139,7 +145,7 @@ flutter test --name "create"
 # Análise estática
 flutter analyze
 
-# Regenerar mocks após mudar TemplateRepository
+# Regenerar mocks após mudar TemplateRepository ou atualizar flutter_secure_storage
 dart run build_runner build
 
 # Build de produção (Linux)
@@ -196,7 +202,34 @@ Após editar os `.arb`, rode `flutter gen-l10n` ou simplesmente `flutter run` pa
 - [ ] Novos arquivos de teste adicionados para a funcionalidade
 - [ ] Strings novas adicionadas nos três arquivos `.arb`
 - [ ] Migrations documentadas e testadas (se houver mudança de schema)
-- [ ] Mocks regenerados (se `TemplateRepository` foi alterado)
+- [ ] Mocks regenerados (se `TemplateRepository` ou `FlutterSecureStorage` foi alterado)
+- [ ] Testes com `AppConfigService` usam `InMemoryKeyProvider` (não dependem do keyring real)
+
+---
+
+## Arquitetura de Banco de Dados — Multi-BD
+
+**A partir da v2.1.0**, o projeto é agnóstico de banco de dados através de abstrações.
+
+### Estrutura
+
+```
+lib/data/datasources/drivers/
+├── database_driver.dart         ← Interface que todo BD deve implementar
+├── sqlite_drift_driver.dart     ← ✅ SQLite (atual)
+├── postgres_driver.dart         ← 🔄 PostgreSQL (futuro)
+├── mysql_driver.dart            ← 🔄 MySQL/MariaDB (futuro)
+└── driver_factory.dart          ← Factory para criar drivers
+```
+
+### Adicionar Novo Banco de Dados
+
+1. Criar novo arquivo `seu_banco_driver.dart` implementando `DatabaseDriver`
+2. Registrar em `DriverFactory`
+3. Adicionar dependência no `pubspec.yaml`
+4. Testes automaticamente funcionam — nenhuma mudança em camadas superiores
+
+**Detalhes completos em [ARCHITECTURE.md](./ARCHITECTURE.md)**
 
 ---
 
@@ -230,4 +263,23 @@ DatabaseProvider
 
 - Para criar um novo banco (com seed de dados de exemplo): `DatabaseProvider.createDatabase(path)`
 - Para abrir um banco existente (sem seed): `DatabaseProvider.openDatabase(path)`
-- Para abertura automática na inicialização: `DatabaseProvider.tryAutoOpen()`
+- Para conectar ao PostgreSQL: `DatabaseProvider.openPostgresDatabase(credentials)`
+- Para abertura automática na inicialização: `DatabaseProvider.tryAutoOpen()` (prioriza PostgreSQL se houver credenciais salvas)
+
+### Segurança e Credenciais Remotas
+
+As credenciais de PostgreSQL são persistidas de forma criptografada usando o `EncryptionService` com chave gerenciada pelo **keyring do sistema operacional** (GNOME Keyring / KWallet no Linux). A chave nunca é armazenada no código ou em texto plano no disco.
+
+Ao alternar entre SQLite e PostgreSQL, o provider automaticamente limpa a configuração do banco anterior para garantir uma sessão limpa.
+
+**Detalhes completos em [SECURITY.md](./SECURITY.md)**.
+
+### Testando PostgreSQL
+
+Para validar mudanças no driver PostgreSQL:
+1. Use os testes unitários em `test/data/models/template_model_test.dart` para garantir que o casting de booleanos (int vs bool) funcione para ambos os bancos.
+2. Utilize o formulário de conexão na `WelcomeScreen` (aba Conexão Remota).
+3. Verifique os logs de conexão no console em caso de falha de SSL ou credenciais inválidas.
+
+
+OBS: Não adicionar comentário nos arquivos Dart/Flutter.

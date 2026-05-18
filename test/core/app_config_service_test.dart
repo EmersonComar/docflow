@@ -3,14 +3,19 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:docflow/core/services/app_config_service.dart';
+import 'package:docflow/core/services/encryption_service.dart';
+import 'package:docflow/core/services/keyring_key_provider.dart';
 
 void main() {
   late Directory tempDir;
   late AppConfigService service;
 
-  setUp(() {
+  setUp(() async {
     tempDir = Directory.systemTemp.createTempSync('docflow_config_test_');
-    service = AppConfigService(configDir: tempDir);
+    final encryption = await EncryptionService.create(
+      keyProvider: InMemoryKeyProvider(),
+    );
+    service = AppConfigService(configDir: tempDir, encryptionService: encryption);
   });
 
   tearDown(() {

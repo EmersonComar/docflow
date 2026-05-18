@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +15,7 @@ import '../../core/utils/string_utils.dart';
 import '../widgets/variable_input_dialog.dart';
 import 'changelog_screen.dart';
 import '../providers/changelog_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -90,22 +90,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openAnotherFile(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await FilePicker.pickFiles(
-      dialogTitle: l10n.selectDatabaseFile,
-      type: FileType.any,
-      allowMultiple: false,
-    );
-    if (result == null || !context.mounted) return;
-    await context.read<DatabaseProvider>().openDatabase(
-      result.files.single.path!,
-    );
+    await context.read<DatabaseProvider>().disconnect();
   }
 
   void _showAddTemplateDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => const AddTemplateDialog(),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showAboutDialog(
+      context: context,
+      applicationName: 'DocFlow',
+      applicationVersion: '2.2.0',
+      applicationIcon: const Icon(Icons.folder_special_rounded, size: 48),
+      children: [
+        const SizedBox(height: 16),
+        Text(l10n.aboutTitle),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final url = Uri.parse('https://github.com/EmersonComar/docflow/issues');
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url);
+            }
+          },
+          child: Text(
+            l10n.supportLabel,
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -160,37 +181,84 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          Consumer<ChangelogProvider>(
-            builder: (context, changelogProvider, child) {
-              return IconButton(
-                icon: Badge(
-                  isLabelVisible: changelogProvider.hasNewVersion,
-                  smallSize: 10,
-                  child: const Icon(Icons.new_releases_outlined),
-                ),
-                onPressed: _showChangelog,
-                tooltip: AppLocalizations.of(context)!.newsTitle,
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: AppLocalizations.of(context)!.settingsMenu,
+            onSelected: (value) async {
+              switch (value) {
+                case 'news':
+                  _showChangelog();
+                  break;
+                case 'open':
+                  await _openAnotherFile(context);
+                  break;
+                case 'theme':
+                  themeNotifier.toggleTheme();
+                  break;
+                case 'lang':
+                  _cycleLanguage();
+                  break;
+                case 'about':
+                  _showAboutDialog(context);
+                  break;
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder_open_rounded),
-            onPressed: () => _openAnotherFile(context),
-            tooltip: AppLocalizations.of(context)!.openAnotherFile,
-          ),
-          IconButton(
-            icon: Icon(_getThemeIcon(themeNotifier.themeMode)),
-            onPressed: () => themeNotifier.toggleTheme(),
-            tooltip: AppLocalizations.of(context)!.changeTheme,
-          ),
-          PopupMenuButton<Locale>(
-            onSelected: (locale) => localeProvider.setLocale(locale),
-            itemBuilder: (context) => const [
-              PopupMenuItem(value:  Locale('pt'), child:  Text('Português')),
-              PopupMenuItem(value:  Locale('en'), child:  Text('English')),
-              PopupMenuItem(value:  Locale('es'), child:  Text('Español')),
-            ],
-            tooltip: AppLocalizations.of(context)!.changeLanguage,
+            itemBuilder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              final hasNews = context.read<ChangelogProvider>().hasNewVersion;
+
+              return [
+                PopupMenuItem(
+                  value: 'news',
+                  child: ListTile(
+                    leading: Badge(
+                      isLabelVisible: hasNews,
+                      smallSize: 10,
+                      child: const Icon(Icons.new_releases_outlined),
+                    ),
+                    title: Text(l10n.newsTitle),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'open',
+                  child: ListTile(
+                    leading: const Icon(Icons.folder_open_rounded),
+                    title: Text(l10n.openAnotherFile),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'theme',
+                  child: ListTile(
+                    leading: Icon(_getThemeIcon(themeNotifier.themeMode)),
+                    title: Text(l10n.changeTheme),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'lang',
+                  child: ListTile(
+                    leading: const Icon(Icons.translate),
+                    title: Text(l10n.changeLanguage),
+                    trailing: Text(
+                      localeProvider.locale?.languageCode.toUpperCase() ?? 'PT',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'about',
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(l10n.aboutTitle),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),
@@ -475,7 +543,6 @@ class _TemplateCard extends StatelessWidget {
                   onPressed: () async {
                     String contentToCopy = template.conteudo;
                     
-                    // Only process variables if snippets are enabled
                     if (template.snippetsEnabled) {
                       final variables = StringUtils.extractVariables(contentToCopy);
 
@@ -488,7 +555,6 @@ class _TemplateCard extends StatelessWidget {
                         if (values != null) {
                           contentToCopy = StringUtils.interpolate(contentToCopy, values);
                         } else {
-                          // User cancelled
                           return;
                         }
                       }

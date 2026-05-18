@@ -1,0 +1,38 @@
+abstract class DatabaseDriver {
+  Future<void> initialize();
+  Future<void> close();
+
+  Future<int> insertTemplate({
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+  });
+
+  Future<int> updateTemplate({
+    required int id,
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+  });
+
+  Future<void> deleteTemplate(int id);
+
+  Future<List<Map<String, dynamic>>> queryTemplates({
+    int limit = 10,
+    int offset = 0,
+    List<String> tags = const [],
+    String searchQuery = '',
+  });
+
+  Future<void> updateTemplateTags(int templateId, List<String> tags);
+
+  Future<List<String>> queryAllTags();
+
+  Future<void> savePreference(String key, String value);
+
+  Future<String?> getPreference(String key);
+
+  Future<void> cleanupOrphanedTags();
+}

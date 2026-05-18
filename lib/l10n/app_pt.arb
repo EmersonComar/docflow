@@ -134,5 +134,35 @@
   "databaseNotFound": "Arquivo não encontrado. Escolha outro.",
   "selectSaveLocation": "Escolher local para salvar",
   "selectDatabaseFile": "Selecionar arquivo de banco de dados",
-  "invalidDatabaseFile": "O arquivo selecionado não é um banco de dados válido."
+  "invalidDatabaseFile": "O arquivo selecionado não é um banco de dados válido.",
+  "postgresConnectionTitle": "Conexão PostgreSQL",
+  "postgresConnectionSubtitle": "Conecte-se a um banco de dados PostgreSQL externo",
+  "serverIpLabel": "IP do Servidor / Hostname",
+  "portLabel": "Porta",
+  "databaseLabel": "Banco de Dados",
+  "usernameLabel": "Usuário",
+  "passwordLabel": "Senha",
+  "connectButton": "Conectar",
+  "connecting": "Conectando...",
+  "allFieldsRequired": "Todos os campos são obrigatórios",
+  "invalidPort": "Porta inválida (1-65535)",
+  "connectionError": "Erro ao conectar: {error}",
+  "@connectionError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutTitle": "Sobre o DocFlow",
+  "appVersion": "Versão {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "supportLabel": "Sugestões ou Bugs (GitHub)",
+  "settingsMenu": "Configurações"
 }

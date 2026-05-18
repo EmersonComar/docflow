@@ -102,6 +102,40 @@ void main() {
       });
     });
 
+    group('Suporte Multi-Banco (Booleans)', () {
+      test('desserializa corretamente quando campos booleanos vêm como bool (PostgreSQL)', () {
+        final map = {
+          'id': 1,
+          'titulo': 'Postgres',
+          'conteudo': 'C',
+          'tags': '',
+          'markdown_enabled': true,
+          'snippets_enabled': false,
+        };
+
+        final model = TemplateModel.fromMap(map);
+
+        expect(model.markdownEnabled, isTrue);
+        expect(model.snippetsEnabled, isFalse);
+      });
+
+      test('desserializa corretamente quando campos booleanos vêm como int (SQLite)', () {
+        final map = {
+          'id': 1,
+          'titulo': 'SQLite',
+          'conteudo': 'C',
+          'tags': '',
+          'markdown_enabled': 1,
+          'snippets_enabled': 0,
+        };
+
+        final model = TemplateModel.fromMap(map);
+
+        expect(model.markdownEnabled, isTrue);
+        expect(model.snippetsEnabled, isFalse);
+      });
+    });
+
     group('toMap', () {
       test('serializa corretamente com id', () {
         const model = TemplateModel(

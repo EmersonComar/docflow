@@ -441,6 +441,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The selected file is not a valid database.'**
   String get invalidDatabaseFile;
+
+  /// No description provided for @postgresConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PostgreSQL Connection'**
+  String get postgresConnectionTitle;
+
+  /// No description provided for @postgresConnectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to an external PostgreSQL database'**
+  String get postgresConnectionSubtitle;
+
+  /// No description provided for @serverIpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server IP / Hostname'**
+  String get serverIpLabel;
+
+  /// No description provided for @portLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get portLabel;
+
+  /// No description provided for @databaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get databaseLabel;
+
+  /// No description provided for @usernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameLabel;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @connectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectButton;
+
+  /// No description provided for @connecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting...'**
+  String get connecting;
+
+  /// No description provided for @allFieldsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields are required'**
+  String get allFieldsRequired;
+
+  /// No description provided for @invalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid port (1-65535)'**
+  String get invalidPort;
+
+  /// No description provided for @connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection error: {error}'**
+  String connectionError(String error);
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About DocFlow'**
+  String get aboutTitle;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String appVersion(String version);
+
+  /// No description provided for @supportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions or Bugs (GitHub)'**
+  String get supportLabel;
+
+  /// No description provided for @settingsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsMenu;
 }
 
 class _AppLocalizationsDelegate
