@@ -38,6 +38,7 @@ apps:
       - x11
       - home
       - password-manager-service
+      - network
 
 parts:
   docflow:
@@ -65,4 +66,3 @@ parts:
       - zenity
       - libproxy1v5
       - libsecret-1-0
-      - libjsoncpp1
