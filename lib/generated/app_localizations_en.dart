@@ -254,4 +254,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMenu => 'Settings';
+
+  @override
+  String get sslEnabled => 'Enable SSL';
 }

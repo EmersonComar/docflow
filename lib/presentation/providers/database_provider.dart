@@ -93,6 +93,7 @@ class DatabaseProvider extends ChangeNotifier {
         database: credentials.database,
         username: credentials.username,
         password: credentials.password,
+        sslEnabled: credentials.sslEnabled,
       );
 
       final db = LocalDatabase.withDriver(driver);

@@ -164,5 +164,6 @@
     }
   },
   "supportLabel": "Suggestions or Bugs (GitHub)",
-  "settingsMenu": "Settings"
+  "settingsMenu": "Settings",
+  "sslEnabled": "Enable SSL"
 }

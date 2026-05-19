@@ -42,6 +42,7 @@ class DriverFactory {
     required String database,
     required String username,
     required String password,
+    bool sslEnabled = false,
   }) {
     switch (type) {
       case DatabaseType.sqlite:
@@ -53,6 +54,7 @@ class DriverFactory {
           database: database,
           username: username,
           password: password,
+          sslEnabled: sslEnabled,
         );
       case DatabaseType.mysql:
       case DatabaseType.mariadb:

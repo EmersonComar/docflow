@@ -24,12 +24,14 @@ class PostgresDriver implements DatabaseDriver {
     required String database,
     required String username,
     required String password,
+    bool sslEnabled = false,
   }) : _credentials = PostgresCredentials(
     host: host,
     port: port,
     database: database,
     username: username,
     password: password,
+    sslEnabled: sslEnabled,
   );
 
   @override
@@ -43,8 +45,8 @@ class PostgresDriver implements DatabaseDriver {
           username: _credentials.username,
           password: _credentials.password,
         ),
-        settings: const ConnectionSettings(
-          sslMode: SslMode.disable,
+        settings: ConnectionSettings(
+          sslMode: _credentials.sslEnabled ? SslMode.require : SslMode.disable,
         ),
       );
 

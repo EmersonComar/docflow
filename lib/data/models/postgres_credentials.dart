@@ -4,6 +4,7 @@ class PostgresCredentials {
   final String database;
   final String username;
   final String password;
+  final bool sslEnabled;
 
   const PostgresCredentials({
     required this.host,
@@ -11,6 +12,7 @@ class PostgresCredentials {
     required this.database,
     required this.username,
     required this.password,
+    this.sslEnabled = false,
   });
 
   factory PostgresCredentials.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class PostgresCredentials {
       database: json['database'] as String? ?? '',
       username: json['username'] as String? ?? '',
       password: json['password'] as String? ?? '',
+      sslEnabled: json['ssl_enabled'] as bool? ?? false,
     );
   }
 
@@ -30,6 +33,7 @@ class PostgresCredentials {
       'database': database,
       'username': username,
       'password': password,
+      'ssl_enabled': sslEnabled,
     };
   }
 
@@ -39,6 +43,7 @@ class PostgresCredentials {
     String? database,
     String? username,
     String? password,
+    bool? sslEnabled,
   }) {
     return PostgresCredentials(
       host: host ?? this.host,
@@ -46,6 +51,7 @@ class PostgresCredentials {
       database: database ?? this.database,
       username: username ?? this.username,
       password: password ?? this.password,
+      sslEnabled: sslEnabled ?? this.sslEnabled,
     );
   }
 

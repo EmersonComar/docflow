@@ -537,6 +537,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsMenu;
+
+  /// No description provided for @sslEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable SSL'**
+  String get sslEnabled;
 }
 
 class _AppLocalizationsDelegate

@@ -26,6 +26,7 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
   late TextEditingController _passwordController;
   bool _isConnecting = false;
   bool _showPassword = false;
+  bool _sslEnabled = false;
   String? _error;
 
   @override
@@ -38,6 +39,7 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
     _databaseController = TextEditingController(text: initial?.database ?? '');
     _usernameController = TextEditingController(text: initial?.username ?? '');
     _passwordController = TextEditingController(text: initial?.password ?? '');
+    _sslEnabled = initial?.sslEnabled ?? false;
   }
 
   @override
@@ -89,6 +91,7 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
         database: database,
         username: username,
         password: password,
+        sslEnabled: _sslEnabled,
       );
 
       widget.onConnect(credentials);
@@ -194,7 +197,22 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
                 border: const OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              value: _sslEnabled,
+              onChanged: _isConnecting
+                  ? null
+                  : (value) => setState(() => _sslEnabled = value),
+              title: Text(l10n.sslEnabled),
+              secondary: Icon(
+                _sslEnabled ? Icons.lock : Icons.lock_open,
+                color: _sslEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
             if (_error != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
