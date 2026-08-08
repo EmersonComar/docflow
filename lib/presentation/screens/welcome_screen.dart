@@ -81,7 +81,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao conectar: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.connectionError(e.toString()))),
         );
       }
     } finally {

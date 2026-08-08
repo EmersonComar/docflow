@@ -54,8 +54,8 @@ class SqliteDriftDriver implements DatabaseDriver {
 
   Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
-    await db.execute('PRAGMA journal_mode = DELETE');
-    await db.execute('PRAGMA synchronous = FULL');
+    await db.execute('PRAGMA journal_mode = WAL');
+    await db.execute('PRAGMA synchronous = NORMAL');
     await db.execute('PRAGMA cache_size = 5000');
   }
 
@@ -160,6 +160,53 @@ class SqliteDriftDriver implements DatabaseDriver {
   }
 
   @override
+  Future<int> createTemplateWithTags({
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  }) async {
+    return db.transaction((txn) async {
+      final id = await txn.insert('templates', {
+        'titulo': titulo,
+        'conteudo': conteudo,
+        'markdown_enabled': markdownEnabled ? 1 : 0,
+        'snippets_enabled': snippetsEnabled ? 1 : 0,
+      });
+      await _syncTags(txn, id, tags);
+      await _cleanupOrphanedTags(txn);
+      return id;
+    });
+  }
+
+  @override
+  Future<void> updateTemplateWithTags({
+    required int id,
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  }) async {
+    await db.transaction((txn) async {
+      await txn.update(
+        'templates',
+        {
+          'titulo': titulo,
+          'conteudo': conteudo,
+          'markdown_enabled': markdownEnabled ? 1 : 0,
+          'snippets_enabled': snippetsEnabled ? 1 : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await _syncTags(txn, id, tags);
+      await _cleanupOrphanedTags(txn);
+    });
+  }
+
+  @override
   Future<void> deleteTemplate(int id) async {
     await db.delete('templates', where: 'id = ?', whereArgs: [id]);
     await cleanupOrphanedTags();
@@ -214,7 +261,16 @@ class SqliteDriftDriver implements DatabaseDriver {
 
   @override
   Future<void> updateTemplateTags(int templateId, List<String> tags) async {
-    await db.delete('template_tags',
+    await _syncTags(db, templateId, tags);
+    await cleanupOrphanedTags();
+  }
+
+  Future<void> _syncTags(
+    DatabaseExecutor executor,
+    int templateId,
+    List<String> tags,
+  ) async {
+    await executor.delete('template_tags',
         where: 'template_id = ?', whereArgs: [templateId]);
 
     for (final tagName in tags) {
@@ -222,19 +278,18 @@ class SqliteDriftDriver implements DatabaseDriver {
       if (trimmed.isEmpty) continue;
 
       int tagId;
-      final existing = await db.query('tags', where: 'name = ?', whereArgs: [trimmed]);
+      final existing =
+          await executor.query('tags', where: 'name = ?', whereArgs: [trimmed]);
 
       if (existing.isNotEmpty) {
         tagId = existing.first['id'] as int;
       } else {
-        tagId = await db.insert('tags', {'name': trimmed});
+        tagId = await executor.insert('tags', {'name': trimmed});
       }
 
-      await db.insert('template_tags',
+      await executor.insert('template_tags',
           {'template_id': templateId, 'tag_id': tagId});
     }
-
-    await cleanupOrphanedTags();
   }
 
   @override
@@ -262,11 +317,15 @@ class SqliteDriftDriver implements DatabaseDriver {
 
   @override
   Future<void> cleanupOrphanedTags() async {
-    await db.rawDelete('''
+    await _cleanupOrphanedTags(db);
+  }
+
+  Future<void> _cleanupOrphanedTags(DatabaseExecutor executor) async {
+    await executor.rawDelete('''
       DELETE FROM tags
       WHERE NOT EXISTS (
-        SELECT 1 
-        FROM template_tags tt 
+        SELECT 1
+        FROM template_tags tt
         WHERE tt.tag_id = tags.id
       )
     ''');

@@ -10,20 +10,18 @@ A partir da versão 2.1.0, o Docflow utiliza uma arquitetura agnóstica de banco
 lib/data/datasources/
 ├── drivers/
 │   ├── database_driver.dart         ← Interface abstrata (implementar para novo BD)
-│   ├── migration.dart               ← Abstração de migrations
-│   ├── query_builder.dart           ← Construtor de queries agnóstico
 │   ├── driver_factory.dart          ← Factory para criar drivers
-│   ├── sqlite_drift_driver.dart     ← ✅ Implementação SQLite (produção)
-│   ├── postgres_driver.dart         ← 🔄 PostgreSQL (em desenvolvimento)
+│   ├── sqlite_drift_driver.dart     ← ✅ Implementação SQLite via sqflite (produção)
+│   ├── postgres_driver.dart         ← ✅ Implementação PostgreSQL (produção)
 │   ├── mysql_driver.dart            ← 🔄 MySQL/MariaDB (em desenvolvimento)
 │   └── drivers.dart                 ← Barrel file (exports)
-├── migrations/
-│   ├── v1_initial_schema.dart
-│   ├── ...
-│   └── (migrations agnósticas)
 ├── local_database.dart              ← Fachada de alto nível
 └── initial_data.dart
 ```
+
+> `sqlite_drift_driver.dart` usa o pacote `sqflite` diretamente (não o pacote Drift, apesar do nome — herdado de um plano inicial de adotar Drift que não avançou). O schema e as migrações de cada driver vivem no próprio driver (`_onCreate`/`_onUpgrade` no SQLite, `CREATE TABLE IF NOT EXISTS` no Postgres) — não há mais uma camada de `Migration` agnóstica separada.
+>
+> **Sobre `sqlite3_flutter_libs`:** a versão `0.6.0+eol` disponível no pub.dev marca o pacote como descontinuado — a partir do `sqlite3` v3.x, o bundling de binários nativos passou a ser feito pelo próprio pacote `sqlite3`, tornando `sqlite3_flutter_libs` desnecessário. Ainda não migramos para esse novo esquema (o pacote atual, `^0.5.0`, continua funcional); fazer essa troca é um trabalho separado que exige validar o build nativo Linux do zero, não uma simples troca de versão no `pubspec.yaml`.
 
 ## Como Usar
 
@@ -37,12 +35,13 @@ final db = LocalDatabase();
 await db.initialize();
 ```
 
-### Trocar para PostgreSQL (Futuro)
+### Trocar para PostgreSQL
+
+Disponível desde a v2.2.0 via `ExternalConnectionForm` na `WelcomeScreen`, que por baixo dos panos chama:
 
 ```dart
 import 'package:docflow/data/datasources/drivers/driver_factory.dart';
 
-// Criar RemoteDatabase (a ser implementado)
 final driver = DriverFactory.createRemoteDriver(
   DatabaseType.postgresql,
   host: 'db.exemplo.com',
@@ -50,8 +49,14 @@ final driver = DriverFactory.createRemoteDriver(
   database: 'docflow',
   username: 'user',
   password: 'pass',
+  sslEnabled: true, // usa SslMode.verifyFull — exige certificado válido
+  caCertificatePem: certPemContent, // opcional: pinning para certificado autoassinado
 );
 ```
+
+> `DriverFactory.createDriver(DatabaseType.postgresql)` lança `UnsupportedError` de propósito — PostgreSQL sempre exige credenciais explícitas, então só `createRemoteDriver` é válido para esse tipo.
+>
+> `caCertificatePem` é opcional e só tem efeito quando `sslEnabled: true`. Quando fornecido, `PostgresDriver` confia **apenas** nesse certificado (não nas CAs públicas do sistema) — ver detalhes em [SECURITY.md](./SECURITY.md#suporte-a-certificado-autoassinado-pinning).
 
 ## Implementar Novo Banco de Dados
 
@@ -134,6 +139,6 @@ dependencies:
 
 ## Segurança
 
-Credenciais de banco remoto são protegidas por criptografia AES-256-CBC com chave gerenciada pelo keyring do sistema operacional. Nenhuma chave é armazenada no código ou em texto plano.
+Credenciais de banco remoto são protegidas por criptografia autenticada AES-256-GCM com chave gerenciada pelo keyring do sistema operacional. Nenhuma chave é armazenada no código ou em texto plano. Conexões PostgreSQL com SSL habilitado usam `SslMode.verifyFull`, validando certificado e hostname do servidor.
 
 **Detalhes completos em [SECURITY.md](./SECURITY.md)**.

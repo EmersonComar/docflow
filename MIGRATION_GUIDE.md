@@ -28,18 +28,16 @@ lib/data/datasources/
 lib/data/datasources/
 ├── drivers/
 │   ├── database_driver.dart        ← Interface nova: padrão para todos os BDs
-│   ├── migration.dart              ← Abstração agnóstica
-│   ├── query_builder.dart          ← Construtor de queries portável
-│   ├── sqlite_drift_driver.dart    ← Implementação SQLite
-│   ├── postgres_driver.dart        ← Placeholder para PostgreSQL
+│   ├── sqlite_drift_driver.dart    ← Implementação SQLite (sqflite; apesar do nome, não usa o pacote Drift)
+│   ├── postgres_driver.dart        ← Implementação PostgreSQL
 │   ├── mysql_driver.dart           ← Placeholder para MySQL
 │   ├── driver_factory.dart         ← Factory para escolher driver
 │   └── drivers.dart                ← Barrel file
-├── migrations/
-│   └── v1_initial_schema.dart      ← Migrations agnósticas (futuro)
 ├── local_database.dart             ← Agora é FACHADA do driver
 └── initial_data.dart
 ```
+
+> **Nota:** `migration.dart`, `query_builder.dart` e `migrations/v1_initial_schema.dart` foram removidos por não terem nenhum uso real — eram abstrações preparadas para uma futura adoção do pacote Drift que nunca chegou a ser usada (o schema é criado/migrado diretamente por cada driver, via `_onCreate`/`_onUpgrade` no SQLite e `CREATE TABLE IF NOT EXISTS` no Postgres). As dependências `drift` e `drift_dev` também saíram do `pubspec.yaml` pelo mesmo motivo.
 
 ## Compatibilidade Retroativa
 
@@ -57,10 +55,11 @@ A interface pública de `LocalDatabase` é idêntica. Internamente, ela delega p
 ## Próximas Fases
 
 ### v2.2.0 (PostgreSQL)
-- [ ] Usar Drift ORM completo (type-safe queries)
-- [ ] Implementar PostgresDriver com drift_postgresql
+- [x] Implementar `PostgresDriver` com o pacote `postgres` (SQL nomeado, sem ORM)
+- [x] TLS com verificação de certificado (`SslMode.verifyFull`)
+- [x] Criar/atualizar template e tags em uma única transação (`runTx`)
 - [ ] Connection pooling para rede
-- [ ] Testes de integração com TestContainers
+- [ ] Testes de integração automatizados contra um Postgres real (hoje validado manualmente; ver nota abaixo)
 
 ### v2.3.0 (MySQL/MariaDB)
 - [ ] Implementar MysqlDriver com drift_mysql
@@ -119,7 +118,7 @@ final testDbType = Platform.environment['TEST_DB'] ?? 'sqlite';
 
 ### Coverage
 
-- ✅ 146 testes passando
+- ✅ 148 testes passando
 - ✅ 0 novos warnings
 - ✅ `flutter analyze` — No issues found!
 
@@ -142,6 +141,12 @@ R: Veja [ARCHITECTURE.md](./ARCHITECTURE.md) na seção "Implementar Novo Banco 
 
 **P: Migrei de v2.1.x para v2.2.0 e minhas credenciais PostgreSQL sumiram. Por quê?**  
 R: A v2.2.0 substituiu a chave de criptografia hardcoded por uma chave gerada no keyring do SO. Credenciais cifradas com a chave antiga são irrecuperáveis. Reinsira os dados de conexão — isso é necessário apenas uma vez. Veja [SECURITY.md](./SECURITY.md).
+
+**P: Atualizei o Docflow e agora preciso reinserir a senha do PostgreSQL de novo. Por quê?**  
+R: A criptografia das credenciais migrou de AES-256-CBC para AES-256-GCM (autenticado). É o mesmo tipo de migração de formato da pergunta anterior — necessária uma única vez. Veja [SECURITY.md](./SECURITY.md#migração-para-aes-256-gcm).
+
+**P: Habilitei "SSL Enabled" e agora não consigo mais conectar no meu Postgres self-hosted. Por quê?**  
+R: A conexão SSL passou a exigir um certificado válido (`SslMode.verifyFull`), em vez de apenas criptografar sem validar (`SslMode.require`, vulnerável a man-in-the-middle). Certificados autoassinados não são aceitos a menos que a CA esteja no trust store do sistema. Veja [SECURITY.md](./SECURITY.md#conexão-postgresql-tls-e-verificação-de-certificado).
 
 ---
 

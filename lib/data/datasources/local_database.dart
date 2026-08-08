@@ -46,6 +46,28 @@ class LocalDatabase {
     );
   }
 
+  Future<int> createTemplateWithTags(TemplateModel template) async {
+    return await _driver.createTemplateWithTags(
+      titulo: template.titulo,
+      conteudo: template.conteudo,
+      markdownEnabled: template.markdownEnabled,
+      snippetsEnabled: template.snippetsEnabled,
+      tags: template.tags,
+    );
+  }
+
+  Future<void> updateTemplateWithTags(TemplateModel template) async {
+    if (template.id == null) throw StateError('Template id cannot be null');
+    await _driver.updateTemplateWithTags(
+      id: template.id!,
+      titulo: template.titulo,
+      conteudo: template.conteudo,
+      markdownEnabled: template.markdownEnabled,
+      snippetsEnabled: template.snippetsEnabled,
+      tags: template.tags,
+    );
+  }
+
   Future<void> deleteTemplate(int id) async {
     await _driver.deleteTemplate(id);
   }

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:docflow/generated/app_localizations.dart';
 import 'package:docflow/data/models/postgres_credentials.dart';
@@ -27,6 +29,9 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
   bool _isConnecting = false;
   bool _showPassword = false;
   bool _sslEnabled = false;
+  bool _useSelfSignedCert = false;
+  String? _caCertificatePem;
+  String? _caCertificateFileName;
   String? _error;
 
   @override
@@ -40,6 +45,8 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
     _usernameController = TextEditingController(text: initial?.username ?? '');
     _passwordController = TextEditingController(text: initial?.password ?? '');
     _sslEnabled = initial?.sslEnabled ?? false;
+    _caCertificatePem = initial?.caCertificatePem;
+    _useSelfSignedCert = _caCertificatePem != null;
   }
 
   @override
@@ -50,6 +57,47 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickCertificateFile() async {
+    setState(() {
+      _error = null;
+    });
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pem', 'crt', 'cer'],
+    );
+    if (result == null || !mounted) return;
+
+    final path = result.files.single.path;
+    if (path == null) return;
+
+    try {
+      final content = await File(path).readAsString();
+      if (!content.contains('-----BEGIN CERTIFICATE-----')) {
+        setState(() {
+          _error = AppLocalizations.of(context)!.certificateInvalidFormat;
+        });
+        return;
+      }
+
+      setState(() {
+        _caCertificatePem = content;
+        _caCertificateFileName = result.files.single.name;
+      });
+    } catch (_) {
+      setState(() {
+        _error = AppLocalizations.of(context)!.certificateReadError;
+      });
+    }
+  }
+
+  void _removeCertificate() {
+    setState(() {
+      _caCertificatePem = null;
+      _caCertificateFileName = null;
+    });
   }
 
   Future<void> _handleConnect() async {
@@ -82,6 +130,13 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
       return;
     }
 
+    if (_sslEnabled && _useSelfSignedCert && _caCertificatePem == null) {
+      setState(() {
+        _error = AppLocalizations.of(context)!.certificateRequiredError;
+      });
+      return;
+    }
+
     setState(() => _isConnecting = true);
 
     try {
@@ -92,6 +147,8 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
         username: username,
         password: password,
         sslEnabled: _sslEnabled,
+        caCertificatePem:
+            _sslEnabled && _useSelfSignedCert ? _caCertificatePem : null,
       );
 
       widget.onConnect(credentials);
@@ -212,6 +269,48 @@ class _ExternalConnectionFormState extends State<ExternalConnectionForm> {
               ),
               contentPadding: EdgeInsets.zero,
             ),
+            if (_sslEnabled) ...[
+              SwitchListTile(
+                value: _useSelfSignedCert,
+                onChanged: _isConnecting
+                    ? null
+                    : (value) => setState(() => _useSelfSignedCert = value),
+                title: Text(l10n.selfSignedCertToggle),
+                subtitle: Text(
+                  l10n.selfSignedCertHint,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                secondary: const Icon(Icons.verified_outlined),
+                contentPadding: EdgeInsets.zero,
+                isThreeLine: true,
+              ),
+              if (_useSelfSignedCert) ...[
+                const SizedBox(height: 4),
+                if (_caCertificateFileName != null)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.description_outlined),
+                    title: Text(
+                      l10n.certificateSelectedLabel(_caCertificateFileName!),
+                      style: textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: l10n.removeCertificateTooltip,
+                      onPressed: _isConnecting ? null : _removeCertificate,
+                    ),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: _isConnecting ? null : _pickCertificateFile,
+                    icon: const Icon(Icons.upload_file),
+                    label: Text(l10n.selectCertificateButton),
+                  ),
+              ],
+            ],
             const SizedBox(height: 8),
             if (_error != null) ...[
               Container(

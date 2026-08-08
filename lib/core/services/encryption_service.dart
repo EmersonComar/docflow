@@ -4,67 +4,53 @@ import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'keyring_key_provider.dart';
 
-/// Serviço de criptografia AES-CBC com IV aleatório por operação.
-///
-/// A chave mestra é obtida do keyring do SO via [KeyProvider] — nunca é
-/// embutida no código. O IV é gerado aleatoriamente a cada [encrypt] e
-/// prefixado ao ciphertext em Base64, eliminando reutilização de IV.
-///
-/// **Uso:**
-/// ```dart
-/// final service = await EncryptionService.create();
-/// final encrypted = service.encrypt('segredo');
-/// final original  = service.decrypt(encrypted);
-/// ```
 class EncryptionService {
   final enc.Encrypter _encrypter;
 
   EncryptionService._(this._encrypter);
 
-  /// Cria uma instância do serviço, obtendo ou gerando a chave no keyring.
-  ///
-  /// Lança [KeyringUnavailableException] se o keyring não estiver acessível.
+  static const int _gcmNonceLength = 12;
+  static const int _formatVersionGcm = 0x02;
+
   static Future<EncryptionService> create({KeyProvider? keyProvider}) async {
     final provider = keyProvider ?? KeyringKeyProvider();
     final key = await provider.getOrCreateKey();
-    return EncryptionService._(enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc)));
+    return EncryptionService._(enc.Encrypter(enc.AES(key, mode: enc.AESMode.gcm)));
   }
 
-  /// Criptografa [plaintext] usando AES-CBC com IV aleatório de 16 bytes.
-  ///
-  /// Formato do resultado (Base64): `<IV_16_bytes><ciphertext>`
   String encrypt(String plaintext) {
-    final iv = _randomIv();
-    final encrypted = _encrypter.encrypt(plaintext, iv: iv);
+    final nonce = _randomNonce();
+    final encrypted = _encrypter.encrypt(plaintext, iv: nonce);
 
-    // Prefixa o IV ao ciphertext antes de codificar em Base64
-    final combined = iv.bytes + encrypted.bytes;
+    final combined = Uint8List(1 + _gcmNonceLength + encrypted.bytes.length);
+    combined[0] = _formatVersionGcm;
+    combined.setRange(1, 1 + _gcmNonceLength, nonce.bytes);
+    combined.setRange(1 + _gcmNonceLength, combined.length, encrypted.bytes);
+
     return base64Encode(combined);
   }
 
-  /// Descriptografa um valor produzido por [encrypt].
-  ///
-  /// Retorna string vazia em caso de falha (dados corrompidos ou chave diferente).
   String decrypt(String encryptedBase64) {
     try {
       final combined = base64Decode(encryptedBase64);
-      if (combined.length <= 16) return '';
+      if (combined.isEmpty || combined[0] != _formatVersionGcm) return '';
+      if (combined.length <= 1 + _gcmNonceLength) return '';
 
-      final ivBytes = combined.sublist(0, 16);
-      final cipherBytes = combined.sublist(16);
+      final nonceBytes = combined.sublist(1, 1 + _gcmNonceLength);
+      final cipherBytes = combined.sublist(1 + _gcmNonceLength);
 
-      final iv = enc.IV(ivBytes);
-      final encrypted = enc.Encrypted(cipherBytes);
-      return _encrypter.decrypt(encrypted, iv: iv);
+      final nonce = enc.IV(Uint8List.fromList(nonceBytes));
+      final encrypted = enc.Encrypted(Uint8List.fromList(cipherBytes));
+      return _encrypter.decrypt(encrypted, iv: nonce);
     } catch (_) {
       return '';
     }
   }
 
-  static enc.IV _randomIv() {
+  static enc.IV _randomNonce() {
     final rng = Random.secure();
-    final bytes = Uint8List(16);
-    for (var i = 0; i < 16; i++) {
+    final bytes = Uint8List(_gcmNonceLength);
+    for (var i = 0; i < _gcmNonceLength; i++) {
       bytes[i] = rng.nextInt(256);
     }
     return enc.IV(bytes);

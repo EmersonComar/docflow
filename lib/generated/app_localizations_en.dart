@@ -257,4 +257,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sslEnabled => 'Enable SSL';
+
+  @override
+  String get selfSignedCertToggle => 'Self-signed certificate';
+
+  @override
+  String get selfSignedCertHint =>
+      'Needed when the server uses a certificate that wasn\'t issued by a public certificate authority';
+
+  @override
+  String get selectCertificateButton => 'Select certificate (.pem/.crt)';
+
+  @override
+  String certificateSelectedLabel(String fileName) {
+    return 'Selected certificate: $fileName';
+  }
+
+  @override
+  String get removeCertificateTooltip => 'Remove certificate';
+
+  @override
+  String get certificateRequiredError =>
+      'Select the server\'s certificate file';
+
+  @override
+  String get certificateReadError => 'Could not read the selected certificate.';
+
+  @override
+  String get certificateInvalidFormat =>
+      'The selected file doesn\'t look like a valid PEM certificate.';
 }

@@ -16,7 +16,9 @@ class DriverFactory {
       case DatabaseType.sqlite:
         return SqliteDriftDriver();
       case DatabaseType.postgresql:
-        return PostgresDriver();
+        throw UnsupportedError(
+          'PostgreSQL requires connection credentials — use createRemoteDriver() instead.',
+        );
       case DatabaseType.mysql:
       case DatabaseType.mariadb:
         return MysqlDriver();
@@ -43,6 +45,7 @@ class DriverFactory {
     required String username,
     required String password,
     bool sslEnabled = false,
+    String? caCertificatePem,
   }) {
     switch (type) {
       case DatabaseType.sqlite:
@@ -55,6 +58,7 @@ class DriverFactory {
           username: username,
           password: password,
           sslEnabled: sslEnabled,
+          caCertificatePem: caCertificatePem,
         );
       case DatabaseType.mysql:
       case DatabaseType.mariadb:

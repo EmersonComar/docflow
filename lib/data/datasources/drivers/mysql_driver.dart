@@ -45,6 +45,29 @@ class MysqlDriver implements DatabaseDriver {
   }
 
   @override
+  Future<int> createTemplateWithTags({
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  }) async {
+    throw UnimplementedError('MySQL support coming soon');
+  }
+
+  @override
+  Future<void> updateTemplateWithTags({
+    required int id,
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  }) async {
+    throw UnimplementedError('MySQL support coming soon');
+  }
+
+  @override
   Future<void> deleteTemplate(int id) async {
     throw UnimplementedError('MySQL support coming soon');
   }

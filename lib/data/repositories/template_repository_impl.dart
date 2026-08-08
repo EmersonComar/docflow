@@ -41,9 +41,8 @@ class TemplateRepositoryImpl implements TemplateRepository {
   Future<Result<Template>> create(Template template) async {
     try {
       final model = TemplateModel.fromEntity(template);
-      final id = await _database.insertTemplate(model);
-      await _database.updateTemplateTags(id, template.tags);
-      
+      final id = await _database.createTemplateWithTags(model);
+
       return Result.success(template.copyWith(id: id));
     } catch (e) {
       return Result.failure(DatabaseFailure(
@@ -62,9 +61,8 @@ class TemplateRepositoryImpl implements TemplateRepository {
 
     try {
       final model = TemplateModel.fromEntity(template);
-      await _database.updateTemplate(model);
-      await _database.updateTemplateTags(template.id!, template.tags);
-      
+      await _database.updateTemplateWithTags(model);
+
       return Result.success(template);
     } catch (e) {
       return Result.failure(DatabaseFailure(

@@ -48,6 +48,20 @@ class AppConfigService {
     return File(p.join(dir.path, _fileName));
   }
 
+  Future<void> _writeConfig(File file, Map<String, dynamic> content) async {
+    final tempFile = File('${file.path}.tmp');
+    await tempFile.writeAsString(jsonEncode(content), flush: true);
+    await tempFile.rename(file.path);
+  }
+
+  Future<void> _updateConfig(
+    Map<String, dynamic> Function(Map<String, dynamic> current) mutate,
+  ) async {
+    final file = await _configFile();
+    final existingContent = await _readExistingConfig(file);
+    await _writeConfig(file, mutate(existingContent));
+  }
+
   Future<String?> loadLastDbPath() async {
     try {
       final file = await _configFile();
@@ -64,19 +78,13 @@ class AppConfigService {
 
   Future<void> saveLastDbPath(String path) async {
     try {
-      final file = await _configFile();
-      final existingContent = await _readExistingConfig(file);
-      existingContent[_keyLastDbPath] = path;
-      await file.writeAsString(jsonEncode(existingContent));
+      await _updateConfig((current) => current..[_keyLastDbPath] = path);
     } catch (_) {}
   }
 
   Future<void> clearLastDbPath() async {
     try {
-      final file = await _configFile();
-      final existingContent = await _readExistingConfig(file);
-      existingContent.remove(_keyLastDbPath);
-      await file.writeAsString(jsonEncode(existingContent));
+      await _updateConfig((current) => current..remove(_keyLastDbPath));
     } catch (_) {}
   }
 
@@ -106,26 +114,19 @@ class AppConfigService {
 
   Future<void> savePostgresCredentials(PostgresCredentials credentials) async {
     final encryption = await _getEncryption();
-    if (encryption == null) return; // keyring indisponível, não salva
+    if (encryption == null) return;
 
     try {
-      final file = await _configFile();
-      final existingContent = await _readExistingConfig(file);
-
       final credentialsJson = jsonEncode(credentials.toJson());
       final encryptedJson = encryption.encrypt(credentialsJson);
 
-      existingContent[_keyPostgresCredentials] = encryptedJson;
-      await file.writeAsString(jsonEncode(existingContent));
+      await _updateConfig((current) => current..[_keyPostgresCredentials] = encryptedJson);
     } catch (_) {}
   }
 
   Future<void> clearPostgresCredentials() async {
     try {
-      final file = await _configFile();
-      final existingContent = await _readExistingConfig(file);
-      existingContent.remove(_keyPostgresCredentials);
-      await file.writeAsString(jsonEncode(existingContent));
+      await _updateConfig((current) => current..remove(_keyPostgresCredentials));
     } catch (_) {}
   }
 
@@ -143,7 +144,7 @@ class AppConfigService {
     try {
       final file = await _configFile();
       if (await file.exists()) {
-        await file.writeAsString(jsonEncode({_keyLastDbPath: ''}));
+        await _writeConfig(file, {_keyLastDbPath: ''});
       }
     } catch (_) {}
   }

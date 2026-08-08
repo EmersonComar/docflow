@@ -17,6 +17,23 @@ abstract class DatabaseDriver {
     required bool snippetsEnabled,
   });
 
+  Future<int> createTemplateWithTags({
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  });
+
+  Future<void> updateTemplateWithTags({
+    required int id,
+    required String titulo,
+    required String conteudo,
+    required bool markdownEnabled,
+    required bool snippetsEnabled,
+    required List<String> tags,
+  });
+
   Future<void> deleteTemplate(int id);
 
   Future<List<Map<String, dynamic>>> queryTemplates({

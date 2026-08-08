@@ -543,6 +543,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable SSL'**
   String get sslEnabled;
+
+  /// No description provided for @selfSignedCertToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-signed certificate'**
+  String get selfSignedCertToggle;
+
+  /// No description provided for @selfSignedCertHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed when the server uses a certificate that wasn\'t issued by a public certificate authority'**
+  String get selfSignedCertHint;
+
+  /// No description provided for @selectCertificateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select certificate (.pem/.crt)'**
+  String get selectCertificateButton;
+
+  /// No description provided for @certificateSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected certificate: {fileName}'**
+  String certificateSelectedLabel(String fileName);
+
+  /// No description provided for @removeCertificateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove certificate'**
+  String get removeCertificateTooltip;
+
+  /// No description provided for @certificateRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the server\'s certificate file'**
+  String get certificateRequiredError;
+
+  /// No description provided for @certificateReadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the selected certificate.'**
+  String get certificateReadError;
+
+  /// No description provided for @certificateInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file doesn\'t look like a valid PEM certificate.'**
+  String get certificateInvalidFormat;
 }
 
 class _AppLocalizationsDelegate

@@ -165,5 +165,20 @@
   },
   "supportLabel": "Suggestions or Bugs (GitHub)",
   "settingsMenu": "Settings",
-  "sslEnabled": "Enable SSL"
+  "sslEnabled": "Enable SSL",
+  "selfSignedCertToggle": "Self-signed certificate",
+  "selfSignedCertHint": "Needed when the server uses a certificate that wasn't issued by a public certificate authority",
+  "selectCertificateButton": "Select certificate (.pem/.crt)",
+  "certificateSelectedLabel": "Selected certificate: {fileName}",
+  "@certificateSelectedLabel": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "removeCertificateTooltip": "Remove certificate",
+  "certificateRequiredError": "Select the server's certificate file",
+  "certificateReadError": "Could not read the selected certificate.",
+  "certificateInvalidFormat": "The selected file doesn't look like a valid PEM certificate."
 }
