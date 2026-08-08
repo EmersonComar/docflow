@@ -100,6 +100,63 @@ void main() {
         expect(model.markdownEnabled, isFalse);
         expect(model.snippetsEnabled, isFalse);
       });
+
+      test('desserializa updated_at (ISO-8601) e pinned (int, SQLite)', () {
+        final map = {
+          'id': 7,
+          'titulo': 'T',
+          'conteudo': 'C',
+          'tags': null,
+          'markdown_enabled': 1,
+          'snippets_enabled': 1,
+          'updated_at': '2024-05-01T10:00:00.000Z',
+          'pinned': 1,
+        };
+
+        final model = TemplateModel.fromMap(map);
+
+        expect(model.updatedAt, equals(DateTime.parse('2024-05-01T10:00:00.000Z')));
+        expect(model.pinned, isTrue);
+      });
+
+      test('desserializa pinned como bool (Postgres)', () {
+        final map = {
+          'id': 8,
+          'titulo': 'T',
+          'conteudo': 'C',
+          'tags': null,
+          'markdown_enabled': true,
+          'snippets_enabled': true,
+          'pinned': false,
+        };
+
+        final model = TemplateModel.fromMap(map);
+
+        expect(model.pinned, isFalse);
+      });
+
+      test('updated_at ausente ou inválido resulta em null (sem lançar exceção)', () {
+        final semCampo = TemplateModel.fromMap({
+          'id': 9,
+          'titulo': 'T',
+          'conteudo': 'C',
+          'tags': null,
+          'markdown_enabled': 1,
+          'snippets_enabled': 1,
+        });
+        final invalido = TemplateModel.fromMap({
+          'id': 10,
+          'titulo': 'T',
+          'conteudo': 'C',
+          'tags': null,
+          'markdown_enabled': 1,
+          'snippets_enabled': 1,
+          'updated_at': 'não é uma data',
+        });
+
+        expect(semCampo.updatedAt, isNull);
+        expect(invalido.updatedAt, isNull);
+      });
     });
 
     group('Suporte Multi-Banco (Booleans)', () {
@@ -178,6 +235,30 @@ void main() {
         final map = model.toMap();
 
         expect(map.containsKey('tags'), isFalse);
+      });
+
+      test('inclui pinned e updated_at (quando presente)', () {
+        final now = DateTime.utc(2024, 5, 1, 10);
+        final model = TemplateModel(
+          titulo: 'T',
+          conteudo: 'C',
+          tags: const [],
+          pinned: true,
+          updatedAt: now,
+        );
+
+        final map = model.toMap();
+
+        expect(map['pinned'], equals(1));
+        expect(map['updated_at'], equals(now.toIso8601String()));
+      });
+
+      test('omite updated_at quando null', () {
+        const model = TemplateModel(titulo: 'T', conteudo: 'C', tags: []);
+
+        final map = model.toMap();
+
+        expect(map.containsKey('updated_at'), isFalse);
       });
     });
 

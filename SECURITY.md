@@ -2,9 +2,9 @@
 
 ## Visão Geral
 
-A partir da **v2.2.0**, o Docflow protege credenciais sensíveis (como senhas de PostgreSQL) usando criptografia autenticada AES-256-GCM com chave gerenciada pelo keyring do sistema operacional. A chave **nunca** aparece no código-fonte, em arquivos de configuração, ou em texto plano no disco.
+A partir da **v2.2.0**, o Docflow protege credenciais sensíveis (como senhas de PostgreSQL) usando criptografia com chave gerenciada pelo keyring do sistema operacional. A chave **nunca** aparece no código-fonte, em arquivos de configuração, ou em texto plano no disco.
 
-> **Nota:** as versões iniciais da v2.2.0 usavam AES-256-CBC (sem autenticação). Essa revisão migrou para AES-256-GCM — veja [Migração para AES-256-GCM](#migração-para-aes-256-gcm) abaixo.
+> **Nota:** a v2.2.0 usava AES-256-CBC (sem autenticação). A partir da **v3.0.0**, a criptografia migrou para **AES-256-GCM** (autenticada) — veja [Migração para AES-256-GCM](#migração-para-aes-256-gcm) abaixo.
 
 ---
 
@@ -182,7 +182,7 @@ dart run build_runner build
 
 ---
 
-## Conexão PostgreSQL: TLS e verificação de certificado
+## Conexão PostgreSQL: TLS e verificação de certificado (v3.0.0+)
 
 Quando o usuário ativa "SSL Enabled" no formulário de conexão remota, o `PostgresDriver` abre a conexão com `SslMode.verifyFull` — o modo mais estrito do pacote `postgres`, que:
 
@@ -190,11 +190,11 @@ Quando o usuário ativa "SSL Enabled" no formulário de conexão remota, o `Post
 2. **Valida a cadeia do certificado** apresentado pelo servidor contra o trust store do sistema;
 3. **Confere se o hostname** do certificado corresponde ao host configurado.
 
-> **Por que não `SslMode.require`?** Esse modo criptografa a conexão mas **ignora erros de verificação de certificado** — a própria documentação do pacote `postgres` alerta que ele aceita qualquer certificado, inclusive um forjado por um atacante na rede (man-in-the-middle via ARP/DNS spoofing, Wi-Fi público, etc.). Isso tornaria o toggle "SSL Enabled" da UI enganoso: o usuário veria "conexão segura" sem a proteção real de MITM que o nome sugere.
+> **Por que não `SslMode.require`?** Esse modo criptografa a conexão mas **ignora erros de verificação de certificado** — a própria documentação do pacote `postgres` alerta que ele aceita qualquer certificado, inclusive um forjado por um atacante na rede (man-in-the-middle via ARP/DNS spoofing, Wi-Fi público, etc.). Isso tornaria o toggle "SSL Enabled" da UI enganoso: o usuário veria "conexão segura" sem a proteção real de MITM que o nome sugere. O toggle "SSL Enabled" existe desde a v2.2.0; até a v2.2.x ele usava `SslMode.require` — a validação de certificado (`verifyFull`) é nova na v3.0.0.
 
 **Implicação prática:** servidores PostgreSQL com certificado autoassinado (comum em instalações internas/self-hosted) não são aceitos com SSL habilitado usando apenas o trust store padrão do sistema — a menos que o usuário forneça o certificado do servidor explicitamente (ver seção seguinte).
 
-### Suporte a certificado autoassinado (pinning)
+### Suporte a certificado autoassinado (pinning) (v3.0.0+)
 
 Na tela de conexão remota, quando "SSL Enabled" está ativo, um segundo toggle "Certificado autoassinado" permite selecionar o arquivo de certificado (`.pem`/`.crt`/`.cer`) do próprio servidor. O conteúdo do certificado é lido e guardado junto das demais credenciais (campo `caCertificatePem` em `PostgresCredentials`, persistido criptografado como o resto).
 
@@ -241,7 +241,7 @@ A versão anterior usava chave AES hardcoded no código. Após atualizar para v2
 
 Veja [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) para detalhes completos.
 
-## Migração para AES-256-GCM
+## Migração para AES-256-GCM (v2.2.x → v3.0.0)
 
 `EncryptionService` passou de AES-256-CBC para AES-256-GCM (autenticado). O novo formato de ciphertext (prefixado com um byte de versão `0x02`) não é compatível com dados cifrados pela versão anterior.
 

@@ -1,6 +1,7 @@
 import '../../core/errors/failures.dart';
 import '../../core/utils/result.dart';
 import '../../domain/entities/template.dart';
+import '../../domain/entities/template_sort_option.dart';
 import '../../domain/repositories/template_repository.dart';
 import '../datasources/local_database.dart';
 import '../datasources/initial_data.dart';
@@ -94,6 +95,7 @@ class TemplateRepositoryImpl implements TemplateRepository {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   }) async {
     try {
       final models = await _database.queryTemplates(
@@ -101,8 +103,9 @@ class TemplateRepositoryImpl implements TemplateRepository {
         offset: offset,
         tags: tags,
         searchQuery: searchQuery,
+        sortOption: sortOption,
       );
-      
+
       return Result.success(models.map((m) => m.toEntity()).toList());
     } catch (e) {
       return Result.failure(DatabaseFailure(
@@ -114,10 +117,38 @@ class TemplateRepositoryImpl implements TemplateRepository {
   }
 
   @override
+  Future<Result<void>> setPinned(int id, bool pinned) async {
+    try {
+      await _database.setPinned(id, pinned);
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure(DatabaseFailure(
+        'pinTemplateFailed',
+        [e.toString()],
+        e,
+      ));
+    }
+  }
+
+  @override
   Future<Result<List<String>>> getAllTags() async {
     try {
       final tags = await _database.queryAllTags();
       return Result.success(tags);
+    } catch (e) {
+      return Result.failure(DatabaseFailure(
+        'loadTagsFailed',
+        [e.toString()],
+        e,
+      ));
+    }
+  }
+
+  @override
+  Future<Result<List<(String name, int count)>>> getTagCounts() async {
+    try {
+      final counts = await _database.queryTagCounts();
+      return Result.success(counts);
     } catch (e) {
       return Result.failure(DatabaseFailure(
         'loadTagsFailed',

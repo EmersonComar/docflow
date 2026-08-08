@@ -27,6 +27,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTagsFound => 'No tags found.';
 
   @override
+  String get searchTagsHint => 'Filter tags...';
+
+  @override
+  String get sortLabel => 'Sort by';
+
+  @override
+  String get sortRecentlyUpdated => 'Recently edited';
+
+  @override
+  String get sortRecentlyCreated => 'Recently created';
+
+  @override
+  String get sortTitleAsc => 'Title (A-Z)';
+
+  @override
+  String get pinTemplateTooltip => 'Pin';
+
+  @override
+  String get unpinTemplateTooltip => 'Unpin';
+
+  @override
   String get copyCodeSnack => 'Code copied!';
 
   @override

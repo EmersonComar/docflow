@@ -136,6 +136,48 @@ abstract class AppLocalizations {
   /// **'No tags found.'**
   String get noTagsFound;
 
+  /// No description provided for @searchTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter tags...'**
+  String get searchTagsHint;
+
+  /// No description provided for @sortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get sortLabel;
+
+  /// No description provided for @sortRecentlyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently edited'**
+  String get sortRecentlyUpdated;
+
+  /// No description provided for @sortRecentlyCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently created'**
+  String get sortRecentlyCreated;
+
+  /// No description provided for @sortTitleAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Title (A-Z)'**
+  String get sortTitleAsc;
+
+  /// No description provided for @pinTemplateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get pinTemplateTooltip;
+
+  /// No description provided for @unpinTemplateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get unpinTemplateTooltip;
+
   /// No description provided for @copyCodeSnack.
   ///
   /// In en, this message translates to:

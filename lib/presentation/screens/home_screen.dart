@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'DocFlow',
-      applicationVersion: '2.2.0',
+      applicationVersion: '3.0.0',
       applicationIcon: const Icon(Icons.folder_special_rounded, size: 48),
       children: [
         const SizedBox(height: 16),
@@ -471,7 +471,10 @@ class _TemplateCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: colorScheme.outline.withAlpha((255 * 0.2).round()),
+          color: template.pinned
+              ? colorScheme.primary.withAlpha((255 * 0.5).round())
+              : colorScheme.outline.withAlpha((255 * 0.2).round()),
+          width: template.pinned ? 1.5 : 1,
         ),
       ),
       child: InkWell(
@@ -495,6 +498,16 @@ class _TemplateCard extends StatelessWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      template.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    ),
+                    color: template.pinned ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                    tooltip: template.pinned
+                        ? AppLocalizations.of(context)!.unpinTemplateTooltip
+                        : AppLocalizations.of(context)!.pinTemplateTooltip,
+                    onPressed: () => provider.togglePinned(template),
                   ),
                   Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
                   _TemplateMenuButton(

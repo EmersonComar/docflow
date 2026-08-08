@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:docflow/core/errors/failures.dart';
 import 'package:docflow/data/datasources/local_database.dart';
 import 'package:docflow/data/repositories/template_repository_impl.dart';
+import 'package:docflow/domain/entities/template_sort_option.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -282,6 +283,98 @@ void main() {
         final dartCount = result.data.where((t) => t == 'dart').length;
         expect(dartCount, equals(1));
         expect(result.data.length, equals(3));
+      });
+    });
+
+    group('getTagCounts', () {
+      test('retorna quantos templates usam cada tag, mais usada primeiro', () async {
+        await repository.create(makeTemplate(titulo: 'T1', tags: ['dart', 'flutter']));
+        await repository.create(makeTemplate(titulo: 'T2', tags: ['dart']));
+        await repository.create(makeTemplate(titulo: 'T3', tags: ['flutter']));
+
+        final result = await repository.getTagCounts();
+
+        expect(result.isSuccess, isTrue);
+        final byName = {for (final c in result.data) c.$1: c.$2};
+        expect(byName['dart'], equals(2));
+        expect(byName['flutter'], equals(2));
+        expect(result.data.first.$2, greaterThanOrEqualTo(result.data.last.$2));
+      });
+
+      test('retorna lista vazia quando não há tags', () async {
+        final result = await repository.getTagCounts();
+
+        expect(result.isSuccess, isTrue);
+        expect(result.data, isEmpty);
+      });
+    });
+
+    group('setPinned', () {
+      test('fixa um template e ele passa a vir primeiro na listagem', () async {
+        final t1 = (await repository.create(makeTemplate(titulo: 'Antigo'))).data;
+        await Future.delayed(const Duration(milliseconds: 5));
+        await repository.create(makeTemplate(titulo: 'Recente'));
+
+        // Sem pin, "Recente" vem primeiro (editado/criado depois).
+        final beforePin = (await repository.getTemplates()).data;
+        expect(beforePin.first.titulo, equals('Recente'));
+
+        final pinResult = await repository.setPinned(t1.id!, true);
+        expect(pinResult.isSuccess, isTrue);
+
+        final afterPin = (await repository.getTemplates()).data;
+        expect(afterPin.first.titulo, equals('Antigo'));
+        expect(afterPin.first.pinned, isTrue);
+      });
+
+      test('desfixar remove a prioridade na ordenação', () async {
+        final t1 = (await repository.create(makeTemplate(titulo: 'T1'))).data;
+        await repository.setPinned(t1.id!, true);
+        await repository.setPinned(t1.id!, false);
+
+        final result = await repository.getTemplates();
+        expect(result.data.first.pinned, isFalse);
+      });
+    });
+
+    group('getTemplates com sortOption', () {
+      test('recentlyUpdated: template editado por último aparece primeiro', () async {
+        final t1 = (await repository.create(makeTemplate(titulo: 'T1'))).data;
+        await repository.create(makeTemplate(titulo: 'T2'));
+        await Future.delayed(const Duration(milliseconds: 5));
+        await repository.update(t1.copyWith(conteudo: 'Editado agora'));
+
+        final result = await repository.getTemplates(
+          sortOption: TemplateSortOption.recentlyUpdated,
+        );
+
+        expect(result.data.first.titulo, equals('T1'));
+      });
+
+      test('titleAsc: ordena alfabeticamente pelo título', () async {
+        await repository.create(makeTemplate(titulo: 'Zebra'));
+        await repository.create(makeTemplate(titulo: 'Abacaxi'));
+        await repository.create(makeTemplate(titulo: 'Manga'));
+
+        final result = await repository.getTemplates(
+          sortOption: TemplateSortOption.titleAsc,
+        );
+
+        expect(result.data.map((t) => t.titulo).toList(), equals(['Abacaxi', 'Manga', 'Zebra']));
+      });
+
+      test('recentlyCreated: ordena por criação, sem considerar edições posteriores', () async {
+        final t1 = (await repository.create(makeTemplate(titulo: 'T1'))).data;
+        await repository.create(makeTemplate(titulo: 'T2'));
+        await Future.delayed(const Duration(milliseconds: 5));
+        await repository.update(t1.copyWith(conteudo: 'Editado'));
+
+        final result = await repository.getTemplates(
+          sortOption: TemplateSortOption.recentlyCreated,
+        );
+
+        // T2 foi criado por último, então continua primeiro mesmo com T1 editado depois.
+        expect(result.data.first.titulo, equals('T2'));
       });
     });
   });

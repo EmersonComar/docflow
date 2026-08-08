@@ -10,7 +10,8 @@ O DocFlow foi projetado para ajudar desenvolvedores, escritores e profissionais 
 
 - **Temas Claro e Escuro:** Alterne facilmente entre os modos para melhor conforto visual.
 - **Gerenciamento Completo de Templates:** Crie, edite e delete templates com facilidade através de um diálogo intuitivo.
-- **Busca e Filtragem:** Encontre templates rapidamente pesquisando por título/conteúdo ou filtrando por múltiplas tags.
+- **Busca e Filtragem:** Encontre templates rapidamente com busca full-text (com relevância e suporte a prefixo/múltiplas palavras) por título/conteúdo, filtrando por múltiplas tags, ou buscando dentro da própria lista de tags.
+- **Ordenação e Favoritos:** Ordene por editado recentemente, criado recentemente ou título, e fixe os templates mais usados no topo da lista.
 - **Cards Expansíveis:** Visualize um trecho do conteúdo ou expanda o card com um clique para ver o texto completo.
 - **Destaque de Sintaxe:** O DocFlow agora oferece destaque de sintaxe para blocos de código em Markdown, melhorando a legibilidade.
 - **Copiar Código Facilmente:** Um botão "Copiar" foi adicionado aos blocos de código, permitindo que você os envie para a área de transferência com um único clique.

@@ -1,12 +1,15 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../domain/entities/template_sort_option.dart';
 import 'database_driver.dart';
 
 class SqliteDriftDriver implements DatabaseDriver {
   Database? _database;
   final bool _inMemory;
   final String? _customPath;
+
+  static const _schemaVersion = 4;
 
   SqliteDriftDriver()
       : _inMemory = false,
@@ -27,7 +30,7 @@ class SqliteDriftDriver implements DatabaseDriver {
     if (_inMemory) {
       _database = await openDatabase(
         inMemoryDatabasePath,
-        version: 3,
+        version: _schemaVersion,
         onConfigure: _onConfigure,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
@@ -45,7 +48,7 @@ class SqliteDriftDriver implements DatabaseDriver {
 
     _database = await openDatabase(
       path,
-      version: 3,
+      version: _schemaVersion,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -66,7 +69,9 @@ class SqliteDriftDriver implements DatabaseDriver {
         titulo TEXT NOT NULL,
         conteudo TEXT NOT NULL,
         markdown_enabled INTEGER NOT NULL DEFAULT 1,
-        snippets_enabled INTEGER NOT NULL DEFAULT 1
+        snippets_enabled INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL,
+        pinned INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -99,6 +104,8 @@ class SqliteDriftDriver implements DatabaseDriver {
     await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_template_tags_tag ON template_tags(tag_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)');
+
+    await _createFtsSchema(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -116,6 +123,50 @@ class SqliteDriftDriver implements DatabaseDriver {
       await db.execute(
           'ALTER TABLE templates ADD COLUMN snippets_enabled INTEGER NOT NULL DEFAULT 1');
     }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE templates ADD COLUMN updated_at TEXT');
+      await db.execute('ALTER TABLE templates ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
+
+      final now = DateTime.now().toUtc().toIso8601String();
+      await db.update(
+        'templates',
+        {'updated_at': now},
+        where: 'updated_at IS NULL',
+      );
+
+      await _createFtsSchema(db);
+      await db.execute("INSERT INTO templates_fts(templates_fts) VALUES('rebuild')");
+    }
+  }
+
+  Future<void> _createFtsSchema(Database db) async {
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS templates_fts USING fts5(
+        titulo, conteudo, content='templates', content_rowid='id'
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS templates_ai AFTER INSERT ON templates BEGIN
+        INSERT INTO templates_fts(rowid, titulo, conteudo) VALUES (new.id, new.titulo, new.conteudo);
+      END
+    ''');
+
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS templates_ad AFTER DELETE ON templates BEGIN
+        INSERT INTO templates_fts(templates_fts, rowid, titulo, conteudo)
+        VALUES('delete', old.id, old.titulo, old.conteudo);
+      END
+    ''');
+
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS templates_au AFTER UPDATE ON templates BEGIN
+        INSERT INTO templates_fts(templates_fts, rowid, titulo, conteudo)
+        VALUES('delete', old.id, old.titulo, old.conteudo);
+        INSERT INTO templates_fts(rowid, titulo, conteudo) VALUES (new.id, new.titulo, new.conteudo);
+      END
+    ''');
   }
 
   Database get db {
@@ -135,6 +186,7 @@ class SqliteDriftDriver implements DatabaseDriver {
       'conteudo': conteudo,
       'markdown_enabled': markdownEnabled ? 1 : 0,
       'snippets_enabled': snippetsEnabled ? 1 : 0,
+      'updated_at': _now(),
     });
   }
 
@@ -153,6 +205,7 @@ class SqliteDriftDriver implements DatabaseDriver {
         'conteudo': conteudo,
         'markdown_enabled': markdownEnabled ? 1 : 0,
         'snippets_enabled': snippetsEnabled ? 1 : 0,
+        'updated_at': _now(),
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -173,6 +226,7 @@ class SqliteDriftDriver implements DatabaseDriver {
         'conteudo': conteudo,
         'markdown_enabled': markdownEnabled ? 1 : 0,
         'snippets_enabled': snippetsEnabled ? 1 : 0,
+        'updated_at': _now(),
       });
       await _syncTags(txn, id, tags);
       await _cleanupOrphanedTags(txn);
@@ -197,6 +251,7 @@ class SqliteDriftDriver implements DatabaseDriver {
           'conteudo': conteudo,
           'markdown_enabled': markdownEnabled ? 1 : 0,
           'snippets_enabled': snippetsEnabled ? 1 : 0,
+          'updated_at': _now(),
         },
         where: 'id = ?',
         whereArgs: [id],
@@ -213,20 +268,54 @@ class SqliteDriftDriver implements DatabaseDriver {
   }
 
   @override
+  Future<void> setPinned(int id, bool pinned) async {
+    await db.update(
+      'templates',
+      {'pinned': pinned ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> queryTemplates({
     int limit = 10,
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   }) async {
-    final buffer = StringBuffer('''
-      SELECT t.id, t.titulo, t.conteudo, t.markdown_enabled, t.snippets_enabled, GROUP_CONCAT(tg.name) as tags
-      FROM templates t
+    final ftsQuery = _buildFtsMatchQuery(searchQuery);
+
+    final buffer = StringBuffer();
+    final params = <dynamic>[];
+
+    if (ftsQuery != null) {
+      buffer.write('''
+        WITH matches AS MATERIALIZED (
+          SELECT templates_fts.rowid AS id, bm25(templates_fts) AS rank
+          FROM templates_fts
+          WHERE templates_fts MATCH ?
+        )
+        SELECT t.id, t.titulo, t.conteudo, t.markdown_enabled, t.snippets_enabled,
+               t.pinned, t.updated_at, GROUP_CONCAT(tg.name) as tags
+        FROM matches m
+        JOIN templates t ON t.id = m.id
+      ''');
+      params.add(ftsQuery);
+    } else {
+      buffer.write('''
+        SELECT t.id, t.titulo, t.conteudo, t.markdown_enabled, t.snippets_enabled,
+               t.pinned, t.updated_at, GROUP_CONCAT(tg.name) as tags
+        FROM templates t
+      ''');
+    }
+
+    buffer.write('''
       LEFT JOIN template_tags tt ON t.id = tt.template_id
       LEFT JOIN tags tg ON tt.tag_id = tg.id
     ''');
 
-    final params = <dynamic>[];
     final whereClauses = <String>[];
 
     if (tags.isNotEmpty) {
@@ -241,23 +330,46 @@ class SqliteDriftDriver implements DatabaseDriver {
       params.addAll(tags);
     }
 
-    if (searchQuery.isNotEmpty) {
-      whereClauses.add('(t.titulo LIKE ? OR t.conteudo LIKE ?)');
-      params.add('%$searchQuery%');
-      params.add('%$searchQuery%');
-    }
-
     if (whereClauses.isNotEmpty) {
       buffer.write(' WHERE ${whereClauses.join(' AND ')}');
     }
 
-    buffer.write(' GROUP BY t.id ORDER BY t.id DESC LIMIT ? OFFSET ?');
+    buffer.write(' GROUP BY t.id ORDER BY t.pinned DESC, ');
+    if (ftsQuery != null) {
+      buffer.write('MIN(m.rank) ASC, ');
+    } else {
+      switch (sortOption) {
+        case TemplateSortOption.recentlyUpdated:
+          buffer.write('t.updated_at DESC, ');
+        case TemplateSortOption.recentlyCreated:
+          break; 
+        case TemplateSortOption.titleAsc:
+          buffer.write('LOWER(t.titulo) ASC, ');
+      }
+    }
+    buffer.write('t.id DESC LIMIT ? OFFSET ?');
     params.add(limit);
     params.add(offset);
 
     final result = await db.rawQuery(buffer.toString(), params);
     return result;
   }
+
+  static String? _buildFtsMatchQuery(String raw) {
+    final tokens = raw
+        .split(RegExp(r'\s+'))
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (tokens.isEmpty) return null;
+
+    return tokens.map((t) {
+      final escaped = t.replaceAll('"', '""');
+      return '"$escaped"*';
+    }).join(' ');
+  }
+
+  static String _now() => DateTime.now().toUtc().toIso8601String();
 
   @override
   Future<void> updateTemplateTags(int templateId, List<String> tags) async {
@@ -278,8 +390,11 @@ class SqliteDriftDriver implements DatabaseDriver {
       if (trimmed.isEmpty) continue;
 
       int tagId;
-      final existing =
-          await executor.query('tags', where: 'name = ?', whereArgs: [trimmed]);
+      final existing = await executor.query(
+        'tags',
+        where: 'LOWER(name) = LOWER(?)',
+        whereArgs: [trimmed],
+      );
 
       if (existing.isNotEmpty) {
         tagId = existing.first['id'] as int;
@@ -297,6 +412,18 @@ class SqliteDriftDriver implements DatabaseDriver {
     final result =
         await db.query('tags', columns: ['name'], orderBy: 'name ASC');
     return result.map((map) => map['name'] as String).toList();
+  }
+
+  @override
+  Future<List<(String name, int count)>> queryTagCounts() async {
+    final result = await db.rawQuery('''
+      SELECT tg.name as name, COUNT(tt.template_id) as count
+      FROM tags tg
+      LEFT JOIN template_tags tt ON tt.tag_id = tg.id
+      GROUP BY tg.id
+      ORDER BY count DESC, tg.name ASC
+    ''');
+    return result.map((row) => (row['name'] as String, row['count'] as int)).toList();
   }
 
   @override

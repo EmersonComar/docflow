@@ -8,6 +8,8 @@ class TemplateModel extends Template {
     required super.tags,
     super.markdownEnabled = true,
     super.snippetsEnabled = true,
+    super.updatedAt,
+    super.pinned = false,
   });
 
   factory TemplateModel.fromEntity(Template template) {
@@ -18,6 +20,8 @@ class TemplateModel extends Template {
       tags: template.tags,
       markdownEnabled: template.markdownEnabled,
       snippetsEnabled: template.snippetsEnabled,
+      updatedAt: template.updatedAt,
+      pinned: template.pinned,
     );
   }
 
@@ -27,6 +31,8 @@ class TemplateModel extends Template {
         ? tagsString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
         : <String>[];
 
+    final updatedAtRaw = map['updated_at'] as String?;
+
     return TemplateModel(
       id: map['id'] as int?,
       titulo: map['titulo'] as String,
@@ -34,6 +40,8 @@ class TemplateModel extends Template {
       tags: tags,
       markdownEnabled: map['markdown_enabled'] == 1 || map['markdown_enabled'] == true,
       snippetsEnabled: map['snippets_enabled'] == 1 || map['snippets_enabled'] == true,
+      updatedAt: updatedAtRaw != null ? DateTime.tryParse(updatedAtRaw) : null,
+      pinned: map['pinned'] == 1 || map['pinned'] == true,
     );
   }
 
@@ -44,6 +52,8 @@ class TemplateModel extends Template {
       'conteudo': conteudo,
       'markdown_enabled': markdownEnabled ? 1 : 0,
       'snippets_enabled': snippetsEnabled ? 1 : 0,
+      'pinned': pinned ? 1 : 0,
+      if (updatedAt != null) 'updated_at': updatedAt!.toUtc().toIso8601String(),
     };
   }
 
@@ -55,6 +65,8 @@ class TemplateModel extends Template {
       tags: tags,
       markdownEnabled: markdownEnabled,
       snippetsEnabled: snippetsEnabled,
+      updatedAt: updatedAt,
+      pinned: pinned,
     );
   }
 }

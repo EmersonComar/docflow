@@ -7,6 +7,13 @@
   "search": "Search",
   "tags": "Tags",
   "noTagsFound": "No tags found.",
+  "searchTagsHint": "Filter tags...",
+  "sortLabel": "Sort by",
+  "sortRecentlyUpdated": "Recently edited",
+  "sortRecentlyCreated": "Recently created",
+  "sortTitleAsc": "Title (A-Z)",
+  "pinTemplateTooltip": "Pin",
+  "unpinTemplateTooltip": "Unpin",
 
   "copyCodeSnack": "Code copied!",
   "copyCodeTooltip": "Copy code",

@@ -7,6 +7,7 @@ import 'dart:async' as _i4;
 
 import 'package:docflow/core/utils/result.dart' as _i2;
 import 'package:docflow/domain/entities/template.dart' as _i5;
+import 'package:docflow/domain/entities/template_sort_option.dart' as _i6;
 import 'package:docflow/domain/repositories/template_repository.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 
@@ -99,6 +100,7 @@ class MockTemplateRepository extends _i1.Mock
     int? offset = 0,
     List<String>? tags = const [],
     String? searchQuery = '',
+    _i6.TemplateSortOption? sortOption = _i6.TemplateSortOption.recentlyUpdated,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -109,6 +111,7 @@ class MockTemplateRepository extends _i1.Mock
             #offset: offset,
             #tags: tags,
             #searchQuery: searchQuery,
+            #sortOption: sortOption,
           },
         ),
         returnValue: _i4.Future<_i2.Result<List<_i5.Template>>>.value(
@@ -122,10 +125,36 @@ class MockTemplateRepository extends _i1.Mock
               #offset: offset,
               #tags: tags,
               #searchQuery: searchQuery,
+              #sortOption: sortOption,
             },
           ),
         )),
       ) as _i4.Future<_i2.Result<List<_i5.Template>>>);
+
+  @override
+  _i4.Future<_i2.Result<void>> setPinned(
+    int? id,
+    bool? pinned,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setPinned,
+          [
+            id,
+            pinned,
+          ],
+        ),
+        returnValue: _i4.Future<_i2.Result<void>>.value(_FakeResult_0<void>(
+          this,
+          Invocation.method(
+            #setPinned,
+            [
+              id,
+              pinned,
+            ],
+          ),
+        )),
+      ) as _i4.Future<_i2.Result<void>>);
 
   @override
   _i4.Future<_i2.Result<List<String>>> getAllTags() => (super.noSuchMethod(
@@ -142,6 +171,23 @@ class MockTemplateRepository extends _i1.Mock
           ),
         )),
       ) as _i4.Future<_i2.Result<List<String>>>);
+
+  @override
+  _i4.Future<_i2.Result<List<(String, int)>>> getTagCounts() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getTagCounts,
+          [],
+        ),
+        returnValue: _i4.Future<_i2.Result<List<(String, int)>>>.value(
+            _FakeResult_0<List<(String, int)>>(
+          this,
+          Invocation.method(
+            #getTagCounts,
+            [],
+          ),
+        )),
+      ) as _i4.Future<_i2.Result<List<(String, int)>>>);
 
   @override
   _i4.Future<_i2.Result<void>> ensureInitialized() => (super.noSuchMethod(

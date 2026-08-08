@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:docflow/generated/app_localizations.dart';
 import '../../domain/entities/template.dart';
 import '../providers/template_provider.dart';
+import 'tag_input_field.dart';
 
 
 class AddTemplateDialog extends StatefulWidget {
@@ -23,8 +24,8 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _tituloController;
   late final TextEditingController _conteudoController;
-  late final TextEditingController _tagsController;
-  
+  late List<String> _tags;
+
   String _markdownPreview = '';
   String? _errorMessage;
   late bool _markdownEnabled;
@@ -35,11 +36,11 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
     super.initState();
     _tituloController = TextEditingController(text: widget.template?.titulo ?? '');
     _conteudoController = TextEditingController(text: widget.template?.conteudo ?? '');
-    _tagsController = TextEditingController(text: widget.template?.tags.join(', ') ?? '');
+    _tags = List.of(widget.template?.tags ?? []);
     _markdownPreview = _conteudoController.text;
     _markdownEnabled = widget.template?.markdownEnabled ?? true;
     _snippetsEnabled = widget.template?.snippetsEnabled ?? true;
-    
+
     _conteudoController.addListener(_onContentChanged);
   }
 
@@ -48,7 +49,6 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
     _conteudoController.removeListener(_onContentChanged);
     _tituloController.dispose();
     _conteudoController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
@@ -100,11 +100,7 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
       id: widget.template?.id,
       titulo: _tituloController.text.trim(),
       conteudo: _conteudoController.text,
-      tags: _tagsController.text
-          .split(',')
-          .map((e) => e.trim())
-          .where((s) => s.isNotEmpty)
-          .toList(),
+      tags: _tags,
       markdownEnabled: _markdownEnabled,
       snippetsEnabled: _snippetsEnabled,
     );
@@ -252,13 +248,11 @@ class _AddTemplateDialogState extends State<AddTemplateDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _tagsController,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.tagsLabel,
-                  border: const OutlineInputBorder(),
-                  filled: true,
-                ),
+              TagInputField(
+                tags: _tags,
+                suggestions: context.watch<TemplateProvider>().allTags,
+                labelText: AppLocalizations.of(context)!.tagsLabel,
+                onChanged: (updated) => setState(() => _tags = updated),
               ),
               const SizedBox(height: 8),
               ExpansionTile(

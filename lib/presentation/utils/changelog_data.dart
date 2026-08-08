@@ -17,6 +17,38 @@ class BackendVersion {
 
 const List<BackendVersion> changelogData = [
   BackendVersion(
+    version: '3.0.0',
+    localizedChanges: {
+      'pt': [
+        'Busca muito mais poderosa: a busca por texto agora usa indexação nativa do banco de dados (full-text search), com suporte a múltiplas palavras, busca por prefixo e resultados ordenados por relevância — encontre templates rapidamente mesmo com uma base grande.',
+        'Ordenação de templates: escolha entre editado recentemente, criado recentemente ou ordem alfabética pelo título.',
+        'Templates fixados: fixe os templates que você mais usa para que fiquem sempre no topo da lista.',
+        'Tags mais inteligentes: autocomplete sugerindo tags já existentes ao digitar, contagem de uso de cada tag e busca dentro do próprio painel de tags — tags duplicadas por diferença de maiúsculas/minúsculas (ex.: "Bug" e "bug") agora são evitadas automaticamente.',
+        'Conexão PostgreSQL mais segura: certificados do servidor agora são validados por padrão ao usar SSL, prevenindo ataques de interceptação (man-in-the-middle); também é possível conectar em servidores com certificado autoassinado enviando o certificado do servidor diretamente pelo formulário de conexão.',
+        'Criptografia das credenciais do PostgreSQL atualizada para AES-256-GCM (autenticada), mais resistente a adulteração do que o padrão anterior. Por causa dessa mudança, pode ser necessário reinserir os dados de conexão uma única vez após atualizar.',
+        'Maior confiabilidade: templates e suas tags agora são salvos de forma atômica (tudo ou nada em caso de falha), e o arquivo de configuração é protegido contra corrupção em caso de fechamento inesperado do aplicativo.',
+      ],
+      'en': [
+        'Much more powerful search: text search now uses native full-text indexing, with support for multiple words, prefix matching, and results ranked by relevance — find your templates quickly even with a large collection.',
+        'Template sorting: choose between recently edited, recently created, or alphabetical order by title.',
+        'Pinned templates: pin the templates you use most so they always stay at the top of the list.',
+        'Smarter tags: autocomplete suggests existing tags as you type, each tag shows how many templates use it, and you can search within the tags panel itself — duplicate tags from case differences (e.g. "Bug" vs "bug") are now avoided automatically.',
+        "More secure PostgreSQL connections: server certificates are now validated by default when using SSL, preventing man-in-the-middle attacks; you can also connect to servers with a self-signed certificate by uploading the server's certificate directly in the connection form.",
+        'Credential encryption upgraded to AES-256-GCM (authenticated), more resistant to tampering than the previous standard. Because of this change, you may need to re-enter your PostgreSQL connection details once after updating.',
+        'Improved reliability: templates and their tags are now saved atomically (all-or-nothing on failure), and the configuration file is protected against corruption if the app closes unexpectedly.',
+      ],
+      'es': [
+        'Búsqueda mucho más potente: la búsqueda de texto ahora usa indexación nativa de texto completo, con soporte para múltiples palabras, coincidencia por prefijo y resultados ordenados por relevancia — encuentre sus plantillas rápidamente incluso con una colección grande.',
+        'Ordenación de plantillas: elija entre editado recientemente, creado recientemente u orden alfabético por título.',
+        'Plantillas fijadas: fije las plantillas que más usa para que siempre aparezcan en la parte superior de la lista.',
+        'Etiquetas más inteligentes: autocompletado que sugiere etiquetas ya existentes mientras escribe, cada etiqueta muestra cuántas plantillas la usan, y puede buscar dentro del propio panel de etiquetas — se evitan automáticamente etiquetas duplicadas por diferencias de mayúsculas/minúsculas (por ejemplo, "Bug" vs "bug").',
+        'Conexiones PostgreSQL más seguras: los certificados del servidor ahora se validan por defecto al usar SSL, previniendo ataques de intermediario (man-in-the-middle); también puede conectarse a servidores con certificado autofirmado subiendo el certificado del servidor directamente en el formulario de conexión.',
+        'Cifrado de credenciales actualizado a AES-256-GCM (autenticado), más resistente a la manipulación que el estándar anterior. Debido a este cambio, puede ser necesario volver a ingresar los datos de conexión de PostgreSQL una única vez después de actualizar.',
+        'Mayor confiabilidad: las plantillas y sus etiquetas ahora se guardan de forma atómica (todo o nada en caso de fallo), y el archivo de configuración está protegido contra corrupción si la aplicación se cierra inesperadamente.',
+      ],
+    },
+  ),
+  BackendVersion(
     version: '2.2.0',
     localizedChanges: {
       'pt': [

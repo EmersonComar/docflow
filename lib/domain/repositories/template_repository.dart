@@ -1,5 +1,6 @@
 import '../../core/utils/result.dart';
 import '../entities/template.dart';
+import '../entities/template_sort_option.dart';
 
 abstract class TemplateRepository {
   Future<Result<Template>> create(Template template);
@@ -10,7 +11,10 @@ abstract class TemplateRepository {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   });
+  Future<Result<void>> setPinned(int id, bool pinned);
   Future<Result<List<String>>> getAllTags();
+  Future<Result<List<(String name, int count)>>> getTagCounts();
   Future<Result<void>> ensureInitialized();
 }

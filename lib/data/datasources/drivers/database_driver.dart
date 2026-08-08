@@ -1,3 +1,5 @@
+import '../../../domain/entities/template_sort_option.dart';
+
 abstract class DatabaseDriver {
   Future<void> initialize();
   Future<void> close();
@@ -41,11 +43,15 @@ abstract class DatabaseDriver {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   });
 
   Future<void> updateTemplateTags(int templateId, List<String> tags);
 
+  Future<void> setPinned(int id, bool pinned);
+
   Future<List<String>> queryAllTags();
+  Future<List<(String name, int count)>> queryTagCounts();
 
   Future<void> savePreference(String key, String value);
 

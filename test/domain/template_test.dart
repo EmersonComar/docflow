@@ -17,6 +17,8 @@ void main() {
         expect(template.tags, isEmpty);
         expect(template.markdownEnabled, isTrue);
         expect(template.snippetsEnabled, isTrue);
+        expect(template.updatedAt, isNull);
+        expect(template.pinned, isFalse);
       });
 
       test('cria template com todos os campos preenchidos', () {
@@ -149,6 +151,34 @@ void main() {
       test('um template não é igual a um objeto de outro tipo', () {
         // ignore: unrelated_type_equality_checks
         expect(t1 == 'string', isFalse);
+      });
+
+      test('templates com pinned diferentes não são iguais', () {
+        final t2 = t1.copyWith(pinned: true);
+        expect(t1, isNot(equals(t2)));
+      });
+
+      test('templates com updatedAt diferentes não são iguais', () {
+        final t2 = t1.copyWith(updatedAt: DateTime(2024, 1, 1));
+        expect(t1, isNot(equals(t2)));
+      });
+    });
+
+    group('pinned e updatedAt', () {
+      test('copyWith altera pinned mantendo os demais campos', () {
+        const original = Template(titulo: 'T', conteudo: 'C', tags: []);
+        final copy = original.copyWith(pinned: true);
+
+        expect(copy.pinned, isTrue);
+        expect(original.pinned, isFalse, reason: 'original não deve mudar (imutabilidade)');
+      });
+
+      test('copyWith altera updatedAt', () {
+        final now = DateTime.now();
+        const original = Template(titulo: 'T', conteudo: 'C', tags: []);
+        final copy = original.copyWith(updatedAt: now);
+
+        expect(copy.updatedAt, equals(now));
       });
     });
   });

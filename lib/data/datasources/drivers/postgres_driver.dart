@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:postgres/postgres.dart';
+import '../../../domain/entities/template_sort_option.dart';
 import '../../models/postgres_credentials.dart';
 import 'database_driver.dart';
 
@@ -59,9 +60,6 @@ class PostgresDriver implements DatabaseDriver {
           password: _credentials.password,
         ),
         settings: ConnectionSettings(
-          // verifyFull valida a cadeia do certificado e o hostname — ao
-          // contrário de SslMode.require, que criptografa mas aceita
-          // qualquer certificado (vulnerável a man-in-the-middle).
           sslMode: _credentials.sslEnabled ? SslMode.verifyFull : SslMode.disable,
           securityContext: buildSecurityContext(_credentials.caCertificatePem),
         ),
@@ -123,6 +121,25 @@ class PostgresDriver implements DatabaseDriver {
     await _conn.execute('''
       CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)
     ''');
+
+    await _conn.execute('''
+      ALTER TABLE templates ADD COLUMN IF NOT EXISTS updated_at TEXT
+    ''');
+    await _conn.execute('''
+      ALTER TABLE templates ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT false
+    ''');
+    await _conn.execute(
+      Sql.named('UPDATE templates SET updated_at = @now WHERE updated_at IS NULL'),
+      parameters: {'now': _now()},
+    );
+
+    await _conn.execute('''
+      ALTER TABLE templates ADD COLUMN IF NOT EXISTS search_vector tsvector
+        GENERATED ALWAYS AS (to_tsvector('simple', coalesce(titulo, '') || ' ' || coalesce(conteudo, ''))) STORED
+    ''');
+    await _conn.execute('''
+      CREATE INDEX IF NOT EXISTS idx_templates_search ON templates USING GIN(search_vector)
+    ''');
   }
 
   @override
@@ -134,14 +151,15 @@ class PostgresDriver implements DatabaseDriver {
   }) async {
     final result = await _conn.execute(
       Sql.named(
-        'INSERT INTO templates (titulo, conteudo, markdown_enabled, snippets_enabled) '
-        'VALUES (@titulo, @conteudo, @markdown, @snippets) RETURNING id',
+        'INSERT INTO templates (titulo, conteudo, markdown_enabled, snippets_enabled, updated_at) '
+        'VALUES (@titulo, @conteudo, @markdown, @snippets, @updatedAt) RETURNING id',
       ),
       parameters: {
         'titulo': titulo,
         'conteudo': conteudo,
         'markdown': markdownEnabled,
         'snippets': snippetsEnabled,
+        'updatedAt': _now(),
       },
     );
 
@@ -159,7 +177,7 @@ class PostgresDriver implements DatabaseDriver {
     await _conn.execute(
       Sql.named(
         'UPDATE templates SET titulo = @titulo, conteudo = @conteudo, '
-        'markdown_enabled = @markdown, snippets_enabled = @snippets '
+        'markdown_enabled = @markdown, snippets_enabled = @snippets, updated_at = @updatedAt '
         'WHERE id = @id',
       ),
       parameters: {
@@ -168,6 +186,7 @@ class PostgresDriver implements DatabaseDriver {
         'conteudo': conteudo,
         'markdown': markdownEnabled,
         'snippets': snippetsEnabled,
+        'updatedAt': _now(),
       },
     );
 
@@ -185,14 +204,15 @@ class PostgresDriver implements DatabaseDriver {
     return _conn.runTx((session) async {
       final result = await session.execute(
         Sql.named(
-          'INSERT INTO templates (titulo, conteudo, markdown_enabled, snippets_enabled) '
-          'VALUES (@titulo, @conteudo, @markdown, @snippets) RETURNING id',
+          'INSERT INTO templates (titulo, conteudo, markdown_enabled, snippets_enabled, updated_at) '
+          'VALUES (@titulo, @conteudo, @markdown, @snippets, @updatedAt) RETURNING id',
         ),
         parameters: {
           'titulo': titulo,
           'conteudo': conteudo,
           'markdown': markdownEnabled,
           'snippets': snippetsEnabled,
+          'updatedAt': _now(),
         },
       );
       final id = result.first.toColumnMap()['id'] as int;
@@ -216,7 +236,7 @@ class PostgresDriver implements DatabaseDriver {
       await session.execute(
         Sql.named(
           'UPDATE templates SET titulo = @titulo, conteudo = @conteudo, '
-          'markdown_enabled = @markdown, snippets_enabled = @snippets '
+          'markdown_enabled = @markdown, snippets_enabled = @snippets, updated_at = @updatedAt '
           'WHERE id = @id',
         ),
         parameters: {
@@ -225,6 +245,7 @@ class PostgresDriver implements DatabaseDriver {
           'conteudo': conteudo,
           'markdown': markdownEnabled,
           'snippets': snippetsEnabled,
+          'updatedAt': _now(),
         },
       );
 
@@ -232,6 +253,16 @@ class PostgresDriver implements DatabaseDriver {
       await _cleanupOrphanedTags(session);
     });
   }
+
+  @override
+  Future<void> setPinned(int id, bool pinned) async {
+    await _conn.execute(
+      Sql.named('UPDATE templates SET pinned = @pinned WHERE id = @id'),
+      parameters: {'id': id, 'pinned': pinned},
+    );
+  }
+
+  static String _now() => DateTime.now().toUtc().toIso8601String();
 
   @override
   Future<void> deleteTemplate(int id) async {
@@ -248,9 +279,13 @@ class PostgresDriver implements DatabaseDriver {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   }) async {
+    final hasSearch = searchQuery.trim().isNotEmpty;
+
     final buffer = StringBuffer(
       'SELECT t.id, t.titulo, t.conteudo, t.markdown_enabled, t.snippets_enabled, '
+      't.pinned, t.updated_at, '
       'STRING_AGG(tg.name, \',\') as tags '
       'FROM templates t '
       'LEFT JOIN template_tags tt ON t.id = tt.template_id '
@@ -268,18 +303,33 @@ class PostgresDriver implements DatabaseDriver {
       params['tags'] = tags;
     }
 
-    if (searchQuery.isNotEmpty) {
+    if (hasSearch) {
       whereClauses.add(
-        '(t.titulo ILIKE @search OR t.conteudo ILIKE @search)',
+        "t.search_vector @@ websearch_to_tsquery('simple', @search)",
       );
-      params['search'] = '%$searchQuery%';
+      params['search'] = searchQuery;
     }
 
     if (whereClauses.isNotEmpty) {
       buffer.write(' WHERE ${whereClauses.join(' AND ')}');
     }
 
-    buffer.write(' GROUP BY t.id ORDER BY t.id DESC LIMIT @limit OFFSET @offset');
+    buffer.write(' GROUP BY t.id ORDER BY t.pinned DESC, ');
+    if (hasSearch) {
+      buffer.write(
+        "ts_rank(t.search_vector, websearch_to_tsquery('simple', @search)) DESC, ",
+      );
+    } else {
+      switch (sortOption) {
+        case TemplateSortOption.recentlyUpdated:
+          buffer.write('t.updated_at DESC, ');
+        case TemplateSortOption.recentlyCreated:
+          break; // t.id DESC abaixo já resolve
+        case TemplateSortOption.titleAsc:
+          buffer.write('LOWER(t.titulo) ASC, ');
+      }
+    }
+    buffer.write('t.id DESC LIMIT @limit OFFSET @offset');
     params['limit'] = limit;
     params['offset'] = offset;
 
@@ -302,7 +352,11 @@ class PostgresDriver implements DatabaseDriver {
   }
 
   Future<void> _syncTags(Session session, int templateId, List<String> tags) async {
-    final trimmedTags = tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toSet().toList();
+    final seenLower = <String>{};
+    final trimmedTags = <String>[];
+    for (final raw in tags.map((t) => t.trim()).where((t) => t.isNotEmpty)) {
+      if (seenLower.add(raw.toLowerCase())) trimmedTags.add(raw);
+    }
 
     await session.execute(
       Sql.named('DELETE FROM template_tags WHERE template_id = @templateId'),
@@ -311,19 +365,34 @@ class PostgresDriver implements DatabaseDriver {
 
     if (trimmedTags.isEmpty) return;
 
-    await session.execute(
-      Sql.named(
-        'INSERT INTO tags (name) SELECT UNNEST(@names::text[]) '
-        'ON CONFLICT (name) DO NOTHING',
-      ),
-      parameters: {'names': trimmedTags},
+    final lowerNames = trimmedTags.map((t) => t.toLowerCase()).toList();
+
+    final existingRows = await session.execute(
+      Sql.named('SELECT id, name FROM tags WHERE LOWER(name) = ANY(@lowerNames::text[])'),
+      parameters: {'lowerNames': lowerNames},
     );
+    final existingLower = existingRows
+        .map((row) => (row.toColumnMap()['name'] as String).toLowerCase())
+        .toSet();
+
+    final namesToInsert =
+        trimmedTags.where((t) => !existingLower.contains(t.toLowerCase())).toList();
+
+    if (namesToInsert.isNotEmpty) {
+      await session.execute(
+        Sql.named(
+          'INSERT INTO tags (name) SELECT UNNEST(@names::text[]) '
+          'ON CONFLICT (name) DO NOTHING',
+        ),
+        parameters: {'names': namesToInsert},
+      );
+    }
 
     final tagRows = await session.execute(
-      Sql.named('SELECT id FROM tags WHERE name = ANY(@names)'),
-      parameters: {'names': trimmedTags},
+      Sql.named('SELECT id FROM tags WHERE LOWER(name) = ANY(@lowerNames::text[])'),
+      parameters: {'lowerNames': lowerNames},
     );
-    final tagIds = tagRows.map((row) => row.toColumnMap()['id'] as int).toList();
+    final tagIds = tagRows.map((row) => row.toColumnMap()['id'] as int).toSet().toList();
 
     if (tagIds.isEmpty) return;
 
@@ -345,6 +414,22 @@ class PostgresDriver implements DatabaseDriver {
 
     return results
         .map((row) => row.toColumnMap()['name'] as String)
+        .toList();
+  }
+
+  @override
+  Future<List<(String name, int count)>> queryTagCounts() async {
+    final results = await _conn.execute('''
+      SELECT tg.name as name, COUNT(tt.template_id) as count
+      FROM tags tg
+      LEFT JOIN template_tags tt ON tt.tag_id = tg.id
+      GROUP BY tg.id
+      ORDER BY count DESC, tg.name ASC
+    ''');
+
+    return results
+        .map((row) => row.toColumnMap())
+        .map((row) => (row['name'] as String, (row['count'] as int)))
         .toList();
   }
 

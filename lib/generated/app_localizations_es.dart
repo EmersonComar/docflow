@@ -27,6 +27,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noTagsFound => 'No se encontraron etiquetas.';
 
   @override
+  String get searchTagsHint => 'Filtrar etiquetas...';
+
+  @override
+  String get sortLabel => 'Ordenar por';
+
+  @override
+  String get sortRecentlyUpdated => 'Editado recientemente';
+
+  @override
+  String get sortRecentlyCreated => 'Creado recientemente';
+
+  @override
+  String get sortTitleAsc => 'Título (A-Z)';
+
+  @override
+  String get pinTemplateTooltip => 'Fijar';
+
+  @override
+  String get unpinTemplateTooltip => 'Desfijar';
+
+  @override
   String get copyCodeSnack => '¡Código copiado!';
 
   @override

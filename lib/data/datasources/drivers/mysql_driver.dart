@@ -1,3 +1,4 @@
+import '../../../domain/entities/template_sort_option.dart';
 import 'database_driver.dart';
 
 class MysqlDriver implements DatabaseDriver {
@@ -78,6 +79,7 @@ class MysqlDriver implements DatabaseDriver {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   }) async {
     throw UnimplementedError('MySQL support coming soon');
   }
@@ -88,7 +90,17 @@ class MysqlDriver implements DatabaseDriver {
   }
 
   @override
+  Future<void> setPinned(int id, bool pinned) async {
+    throw UnimplementedError('MySQL support coming soon');
+  }
+
+  @override
   Future<List<String>> queryAllTags() async {
+    throw UnimplementedError('MySQL support coming soon');
+  }
+
+  @override
+  Future<List<(String name, int count)>> queryTagCounts() async {
     throw UnimplementedError('MySQL support coming soon');
   }
 

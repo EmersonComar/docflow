@@ -61,12 +61,20 @@ A interface pública de `LocalDatabase` é idêntica. Internamente, ela delega p
 - [ ] Connection pooling para rede
 - [ ] Testes de integração automatizados contra um Postgres real (hoje validado manualmente; ver nota abaixo)
 
-### v2.3.0 (MySQL/MariaDB)
-- [ ] Implementar MysqlDriver com drift_mysql
+### v3.0.0 (Busca, Ordenação e Organização — Atual)
+- [x] Busca full-text nativa (FTS5 no SQLite, tsvector+GIN no Postgres), com ranking por relevância
+- [x] Ordenação de templates (editado recentemente / criado recentemente / título) e templates fixados (pin)
+- [x] Autocomplete e matching case-insensitive de tags + contagem de uso
+- [x] TLS do PostgreSQL com verificação de certificado (`SslMode.verifyFull`) e suporte a certificado autoassinado
+- [x] Criptografia das credenciais migrada para AES-256-GCM (autenticada)
+- [x] Migrações de schema idempotentes/aditivas nos dois drivers — sem ação do usuário
+
+### v3.1.0 (MySQL/MariaDB, planejado)
+- [ ] Implementar MysqlDriver
 - [ ] CLI de setup de banco remoto
 - [ ] Migração de dados SQLite → PostgreSQL
 
-### v2.4.0 (Produção)
+### v3.2.0 (Produção, planejado)
 - [ ] Dashboard de admin para gerenciar bancos
 - [ ] Suporte a múltiplas instâncias simultâneas
 - [ ] Replicação de dados
@@ -118,7 +126,7 @@ final testDbType = Platform.environment['TEST_DB'] ?? 'sqlite';
 
 ### Coverage
 
-- ✅ 148 testes passando
+- ✅ 183 testes passando
 - ✅ 0 novos warnings
 - ✅ `flutter analyze` — No issues found!
 
@@ -146,8 +154,11 @@ R: A v2.2.0 substituiu a chave de criptografia hardcoded por uma chave gerada no
 R: A criptografia das credenciais migrou de AES-256-CBC para AES-256-GCM (autenticado). É o mesmo tipo de migração de formato da pergunta anterior — necessária uma única vez. Veja [SECURITY.md](./SECURITY.md#migração-para-aes-256-gcm).
 
 **P: Habilitei "SSL Enabled" e agora não consigo mais conectar no meu Postgres self-hosted. Por quê?**  
-R: A conexão SSL passou a exigir um certificado válido (`SslMode.verifyFull`), em vez de apenas criptografar sem validar (`SslMode.require`, vulnerável a man-in-the-middle). Certificados autoassinados não são aceitos a menos que a CA esteja no trust store do sistema. Veja [SECURITY.md](./SECURITY.md#conexão-postgresql-tls-e-verificação-de-certificado).
+R: A conexão SSL passou a exigir um certificado válido (`SslMode.verifyFull`), em vez de apenas criptografar sem validar (`SslMode.require`, vulnerável a man-in-the-middle). Certificados autoassinados não são aceitos a menos que a CA esteja no trust store do sistema — ou que você forneça o certificado do servidor no formulário de conexão. Veja [SECURITY.md](./SECURITY.md#conexão-postgresql-tls-e-verificação-de-certificado).
+
+**P: Preciso fazer alguma coisa para ganhar a busca por texto (FTS5/tsvector), a ordenação por "editado recentemente" ou o fixar templates?**  
+R: Não. Essas colunas/índices são adicionados automaticamente na primeira conexão após atualizar (schema v3→v4 no SQLite; `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` no Postgres), preservando todos os templates e tags existentes. Veja [ARCHITECTURE.md](./ARCHITECTURE.md#busca-ordenação-e-organização).
 
 ---
 
-**Status**: ✅ Fase 1 e Fase 2 concluídas. PostgreSQL disponível + criptografia segura via keyring.
+**Status**: ✅ Fases 1, 2 e 3 concluídas. PostgreSQL disponível, criptografia segura via keyring (AES-256-GCM), TLS com verificação de certificado, e busca/ordenação/organização full-text (v3.0.0).

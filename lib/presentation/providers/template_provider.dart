@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/template.dart';
+import '../../domain/entities/template_sort_option.dart';
 import '../../domain/repositories/template_repository.dart';
 
 class TemplateProvider extends ChangeNotifier {
@@ -7,15 +8,17 @@ class TemplateProvider extends ChangeNotifier {
 
   List<Template> _templates = [];
   List<String> _allTags = [];
+  List<(String name, int count)> _tagCounts = [];
   final Map<String, bool> _selectedTags = {};
   final Set<int> _expandedTemplateIds = {};
-  
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _isInitialized = false;
   (String, List<Object>)? _error;
   String _searchQuery = '';
-  
+  TemplateSortOption _sortOption = TemplateSortOption.recentlyUpdated;
+
   final int _pageSize = 10;
   int _page = 0;
   bool _hasMore = true;
@@ -24,12 +27,14 @@ class TemplateProvider extends ChangeNotifier {
 
   List<Template> get templates => _templates;
   List<String> get allTags => _allTags;
+  List<(String name, int count)> get tagCounts => _tagCounts;
   Map<String, bool> get selectedTags => _selectedTags;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isInitialized => _isInitialized;
   (String, List<Object>)? get error => _error;
   bool get hasMore => _hasMore;
+  TemplateSortOption get sortOption => _sortOption;
 
   bool isTemplateExpanded(int? templateId) {
     return templateId != null && _expandedTemplateIds.contains(templateId);
@@ -37,7 +42,7 @@ class TemplateProvider extends ChangeNotifier {
 
   void toggleTemplateExpansion(int? templateId) {
     if (templateId == null) return;
-    
+
     if (_expandedTemplateIds.contains(templateId)) {
       _expandedTemplateIds.remove(templateId);
     } else {
@@ -54,7 +59,7 @@ class TemplateProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _repository.ensureInitialized();
-    
+
     if (result.isFailure) {
       _error = (result.failure.messageKey, result.failure.messageArgs);
       _isLoading = false;
@@ -80,6 +85,13 @@ class TemplateProvider extends ChangeNotifier {
         _allTags = tagsResult.data;
       }
 
+      try {
+        final countsResult = await _repository.getTagCounts();
+        if (countsResult.isSuccess) {
+          _tagCounts = countsResult.data;
+        }
+      } catch (_) {}
+
       final activeTags = _selectedTags.entries
           .where((e) => e.value)
           .map((e) => e.key)
@@ -90,6 +102,7 @@ class TemplateProvider extends ChangeNotifier {
         offset: 0,
         tags: activeTags,
         searchQuery: _searchQuery,
+        sortOption: _sortOption,
       );
 
       if (templatesResult.isSuccess) {
@@ -124,6 +137,7 @@ class TemplateProvider extends ChangeNotifier {
         offset: _page * _pageSize,
         tags: activeTags,
         searchQuery: _searchQuery,
+        sortOption: _sortOption,
       );
 
       if (result.isSuccess) {
@@ -151,9 +165,27 @@ class TemplateProvider extends ChangeNotifier {
     refreshTemplates();
   }
 
+  void setSortOption(TemplateSortOption option) {
+    if (_sortOption == option) return;
+    _sortOption = option;
+    refreshTemplates();
+  }
+
+  Future<void> togglePinned(Template template) async {
+    if (template.id == null) return;
+
+    final result = await _repository.setPinned(template.id!, !template.pinned);
+    if (result.isSuccess) {
+      await refreshTemplates();
+    } else {
+      _error = (result.failure.messageKey, result.failure.messageArgs);
+      notifyListeners();
+    }
+  }
+
   Future<void> addTemplate(Template template) async {
     final result = await _repository.create(template);
-    
+
     if (result.isSuccess) {
       await refreshTemplates();
     } else {

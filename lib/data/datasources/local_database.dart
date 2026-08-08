@@ -1,5 +1,6 @@
 import 'drivers/sqlite_drift_driver.dart';
 import 'drivers/database_driver.dart';
+import '../../domain/entities/template_sort_option.dart';
 import '../models/template_model.dart';
 
 class LocalDatabase {
@@ -76,6 +77,10 @@ class LocalDatabase {
     await _driver.updateTemplateTags(templateId, tags);
   }
 
+  Future<void> setPinned(int id, bool pinned) async {
+    await _driver.setPinned(id, pinned);
+  }
+
   Future<void> cleanupOrphanedTags() async {
     await _driver.cleanupOrphanedTags();
   }
@@ -85,18 +90,24 @@ class LocalDatabase {
     int offset = 0,
     List<String> tags = const [],
     String searchQuery = '',
+    TemplateSortOption sortOption = TemplateSortOption.recentlyUpdated,
   }) async {
     final results = await _driver.queryTemplates(
       limit: limit,
       offset: offset,
       tags: tags,
       searchQuery: searchQuery,
+      sortOption: sortOption,
     );
     return results.map((map) => TemplateModel.fromMap(map)).toList();
   }
 
   Future<List<String>> queryAllTags() async {
     return await _driver.queryAllTags();
+  }
+
+  Future<List<(String name, int count)>> queryTagCounts() async {
+    return await _driver.queryTagCounts();
   }
 
   Future<void> savePreference(String key, String value) async {

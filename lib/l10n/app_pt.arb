@@ -7,6 +7,13 @@
   "search": "Buscar",
   "tags": "Tags",
   "noTagsFound": "Nenhuma tag encontrada.",
+  "searchTagsHint": "Filtrar tags...",
+  "sortLabel": "Ordenar por",
+  "sortRecentlyUpdated": "Editado recentemente",
+  "sortRecentlyCreated": "Criado recentemente",
+  "sortTitleAsc": "Título (A-Z)",
+  "pinTemplateTooltip": "Fixar",
+  "unpinTemplateTooltip": "Desafixar",
 
   "copyCodeSnack": "Código copiado!",
   "copyCodeTooltip": "Copiar código",

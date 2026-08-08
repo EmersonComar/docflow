@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:docflow/core/errors/failures.dart';
 import 'package:docflow/core/utils/result.dart';
 import 'package:docflow/domain/entities/template.dart';
+import 'package:docflow/domain/entities/template_sort_option.dart';
 import 'package:docflow/domain/repositories/template_repository.dart';
 import 'package:docflow/presentation/providers/template_provider.dart';
 
@@ -320,6 +321,115 @@ void main() {
         await provider.deleteTemplate(1);
 
         expect(provider.error, isNotNull);
+      });
+    });
+
+    group('setSortOption', () {
+      test('atualiza sortOption e chama refreshTemplates com o novo valor', () async {
+        stubSuccess();
+        await provider.initialize();
+
+        provider.setSortOption(TemplateSortOption.titleAsc);
+        await Future.delayed(Duration.zero);
+
+        expect(provider.sortOption, equals(TemplateSortOption.titleAsc));
+        final captured = verify(mockRepository.getTemplates(
+          limit: anyNamed('limit'),
+          offset: anyNamed('offset'),
+          tags: anyNamed('tags'),
+          searchQuery: anyNamed('searchQuery'),
+          sortOption: captureAnyNamed('sortOption'),
+        )).captured;
+        expect(captured.last, equals(TemplateSortOption.titleAsc));
+      });
+
+      test('não refaz o refresh se o valor escolhido já é o atual', () async {
+        stubSuccess();
+        await provider.initialize();
+        clearInteractions(mockRepository);
+
+        provider.setSortOption(TemplateSortOption.recentlyUpdated); // já é o padrão
+
+        verifyNever(mockRepository.getTemplates(
+          limit: anyNamed('limit'),
+          offset: anyNamed('offset'),
+          tags: anyNamed('tags'),
+          searchQuery: anyNamed('searchQuery'),
+          sortOption: anyNamed('sortOption'),
+        ));
+      });
+    });
+
+    group('togglePinned', () {
+      test('fixa um template e recarrega a lista', () async {
+        stubSuccess();
+        when(mockRepository.setPinned(any, any))
+            .thenAnswer((_) async => Result.success(null));
+        await provider.initialize();
+
+        await provider.togglePinned(tTemplate); // tTemplate.pinned == false
+
+        verify(mockRepository.setPinned(tTemplate.id!, true)).called(1);
+      });
+
+      test('desafixa quando o template já está fixado', () async {
+        stubSuccess();
+        when(mockRepository.setPinned(any, any))
+            .thenAnswer((_) async => Result.success(null));
+        await provider.initialize();
+
+        final pinned = tTemplate.copyWith(pinned: true);
+        await provider.togglePinned(pinned);
+
+        verify(mockRepository.setPinned(pinned.id!, false)).called(1);
+      });
+
+      test('define error quando setPinned falha', () async {
+        stubSuccess();
+        when(mockRepository.setPinned(any, any)).thenAnswer(
+          (_) async => Result.failure(const DatabaseFailure('pinTemplateFailed')),
+        );
+        await provider.initialize();
+
+        await provider.togglePinned(tTemplate);
+
+        expect(provider.error, isNotNull);
+        expect(provider.error!.$1, equals('pinTemplateFailed'));
+      });
+
+      test('não faz nada quando o template não tem id', () async {
+        stubSuccess();
+        await provider.initialize();
+
+        final semId = tTemplate.copyWith();
+        await provider.togglePinned(
+          Template(titulo: semId.titulo, conteudo: semId.conteudo, tags: semId.tags),
+        );
+
+        verifyNever(mockRepository.setPinned(any, any));
+      });
+    });
+
+    group('tagCounts', () {
+      test('carrega a contagem de tags durante refreshTemplates', () async {
+        stubSuccess();
+        when(mockRepository.getTagCounts()).thenAnswer(
+          (_) async => Result.success([('dart', 3), ('flutter', 1)]),
+        );
+
+        await provider.initialize();
+
+        expect(provider.tagCounts, equals([('dart', 3), ('flutter', 1)]));
+      });
+
+      test('falha ao buscar contagem não impede o carregamento dos templates', () async {
+        stubSuccess(templates: tTemplateList);
+        when(mockRepository.getTagCounts()).thenThrow(Exception('boom'));
+
+        await provider.initialize();
+
+        expect(provider.templates, hasLength(3));
+        expect(provider.tagCounts, isEmpty);
       });
     });
 
