@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  analyze-and-test:
-    name: Analyze & Test
+  analyze:
+    name: Analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +24,23 @@ jobs:
       - name: Analyze
         run: flutter analyze --fatal-infos
 
+      - name: Check outdated dependencies (informativo, não falha o build)
+        run: flutter pub outdated || true
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Run tests with coverage
         run: flutter test --coverage
 
@@ -33,5 +50,26 @@ jobs:
           name: coverage-lcov
           path: coverage/lcov.info
 
-      - name: Check outdated dependencies (informativo, não falha o build)
-        run: flutter pub outdated || true
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libblkid-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        run: flutter build linux
