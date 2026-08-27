@@ -60,7 +60,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
+            clang cmake ninja-build pkg-config dpkg-dev \
             libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libblkid-dev
 
       - uses: subosito/flutter-action@v2
@@ -73,3 +73,71 @@ jobs:
 
       - name: Build Linux
         run: flutter build linux
+
+      - name: Package .deb
+        run: |
+          set -e
+          VERSION=$(grep '^version:' pubspec.yaml | head -1 | sed 's/version:\s*//' | tr -d '[:space:]')
+          PKGROOT=pkgroot
+          BUNDLE=build/linux/x64/release/bundle
+
+          mkdir -p "$PKGROOT/opt/docflow"
+          cp -r "$BUNDLE"/* "$PKGROOT/opt/docflow/"
+
+          mkdir -p "$PKGROOT/usr/bin"
+          ln -s /opt/docflow/docflow "$PKGROOT/usr/bin/docflow"
+
+          mkdir -p "$PKGROOT/usr/share/applications"
+          sed -e 's|Exec=docflow|Exec=/opt/docflow/docflow|' \
+              -e 's|Icon=${SNAP}/meta/gui/docflow.png|Icon=docflow|' \
+              snap/gui/docflow.desktop \
+              > "$PKGROOT/usr/share/applications/docflow.desktop"
+
+          mkdir -p "$PKGROOT/usr/share/icons/hicolor/1024x1024/apps"
+          cp snap/gui/docflow.png "$PKGROOT/usr/share/icons/hicolor/1024x1024/apps/docflow.png"
+
+          # debian/control "fake", só pra dpkg-shlibdeps saber onde está.
+          # (heredoc não combina bem com bloco YAML indentado, por isso os
+          # arquivos abaixo são montados com printf em vez de "cat << EOF")
+          mkdir -p debian
+          printf '%s\n' \
+            'Source: docflow' \
+            'Section: utils' \
+            'Priority: optional' \
+            'Maintainer: Emerson Comar <emerson.comar@ixcsoft.com.br>' \
+            '' \
+            'Package: docflow' \
+            'Architecture: amd64' \
+            'Depends: ${shlibs:Depends}, ${misc:Depends}' \
+            'Description: DocFlow' \
+            > debian/control
+
+          SHLIBS_DEPENDS=$(dpkg-shlibdeps -O --ignore-missing-info \
+            "$PKGROOT/opt/docflow/docflow" "$PKGROOT/opt/docflow/lib"/*.so* 2>/dev/null \
+            | sed 's/^shlibs:Depends=//')
+
+          mkdir -p "$PKGROOT/DEBIAN"
+          printf '%s\n' \
+            "Package: docflow" \
+            "Version: $VERSION" \
+            "Section: utils" \
+            "Priority: optional" \
+            "Architecture: amd64" \
+            "Depends: $SHLIBS_DEPENDS" \
+            "Maintainer: Emerson Comar <emerson.comar@ixcsoft.com.br>" \
+            "Homepage: https://github.com/EmersonComar/docflow" \
+            "Description: A document and note template manager with Markdown support." \
+            " DocFlow simplifies your life by allowing you to easily create, manage," \
+            " and reuse document and note templates." \
+            > "$PKGROOT/DEBIAN/control"
+
+          dpkg-deb --build --root-owner-group "$PKGROOT" "docflow_${VERSION}_amd64.deb"
+
+      - name: Verify .deb installs cleanly
+        run: sudo apt-get install -y ./docflow_*.deb
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docflow-deb
+          path: docflow_*.deb

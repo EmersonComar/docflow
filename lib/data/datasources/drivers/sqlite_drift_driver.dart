@@ -118,15 +118,16 @@ class SqliteDriftDriver implements DatabaseDriver {
     }
 
     if (oldVersion < 3) {
-      await db.execute(
-          'ALTER TABLE templates ADD COLUMN markdown_enabled INTEGER NOT NULL DEFAULT 1');
-      await db.execute(
-          'ALTER TABLE templates ADD COLUMN snippets_enabled INTEGER NOT NULL DEFAULT 1');
+      await _addColumnIfMissing(
+          db, 'templates', 'markdown_enabled', 'INTEGER NOT NULL DEFAULT 1');
+      await _addColumnIfMissing(
+          db, 'templates', 'snippets_enabled', 'INTEGER NOT NULL DEFAULT 1');
     }
 
     if (oldVersion < 4) {
-      await db.execute('ALTER TABLE templates ADD COLUMN updated_at TEXT');
-      await db.execute('ALTER TABLE templates ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
+      await _addColumnIfMissing(db, 'templates', 'updated_at', 'TEXT');
+      await _addColumnIfMissing(
+          db, 'templates', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
 
       final now = DateTime.now().toUtc().toIso8601String();
       await db.update(
@@ -138,6 +139,21 @@ class SqliteDriftDriver implements DatabaseDriver {
       await _createFtsSchema(db);
       await db.execute("INSERT INTO templates_fts(templates_fts) VALUES('rebuild')");
     }
+  }
+
+  Future<bool> _columnExists(Database db, String table, String column) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    return columns.any((row) => row['name'] == column);
+  }
+
+  Future<void> _addColumnIfMissing(
+    Database db,
+    String table,
+    String column,
+    String definition,
+  ) async {
+    if (await _columnExists(db, table, column)) return;
+    await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
   }
 
   Future<void> _createFtsSchema(Database db) async {
