@@ -39,6 +39,32 @@ Após a instalação, você pode encontrar o DocFlow no menu de aplicativos do s
 
 [![Disponível na Snap Store](https://snapcraft.io/pt/dark/install.svg)](https://snapcraft.io/docflow)
 
+## Instalação (linux via APT)
+
+O DocFlow também está disponível como pacote `.deb`, através de um repositório APT próprio (`repo.emersoncomar.com.br`). Configure o repositório uma única vez, usando o formato [DEB822](https://manpages.debian.org/testing/apt/sources.list.5.en.html#DEB822-STYLE_FORMAT):
+
+```sh
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://repo.emersoncomar.com.br/repo-signing-key.asc | sudo gpg --dearmor -o /etc/apt/keyrings/docflow.gpg
+
+sudo tee /etc/apt/sources.list.d/docflow.sources > /dev/null <<EOF
+Types: deb
+URIs: https://repo.emersoncomar.com.br/docflow
+Suites: stable
+Components: main
+Signed-By: /etc/apt/keyrings/docflow.gpg
+EOF
+
+sudo apt update
+sudo apt install docflow
+```
+
+A partir daí, atualizações futuras vêm junto com o `apt upgrade` normal do sistema, sem precisar baixar o `.deb` manualmente de novo:
+
+```sh
+sudo apt update && sudo apt upgrade docflow
+```
+
 ## Internacionalização (i18n)
 
 O DocFlow agora suporta múltiplos idiomas e detecta automaticamente o idioma do sistema. Também é possível escolher manualmente o idioma nas opções do aplicativo; a escolha do usuário é persistida localmente para que a preferência seja mantida entre execuções.
