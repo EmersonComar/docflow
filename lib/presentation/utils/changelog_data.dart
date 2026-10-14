@@ -17,6 +17,23 @@ class BackendVersion {
 
 const List<BackendVersion> changelogData = [
   BackendVersion(
+    version: '3.0.1',
+    localizedChanges: {
+      'pt': [
+        'Pacote .deb corrigido: o DocFlow agora abre normalmente após a instalação pelo .deb ou pelo repositório apt, mesmo em sistemas sem bibliotecas gráficas (EGL/OpenGL ES) pré-instaladas.',
+        'Ícone correto no menu de aplicativos, na dock e no alternador de janelas ao instalar pelo .deb, igual ao da versão snap.',
+      ],
+      'en': [
+        'Fixed .deb package: DocFlow now launches correctly after installing from the .deb or the apt repository, even on systems without graphics libraries (EGL/OpenGL ES) preinstalled.',
+        'Correct icon in the application menu, dock and window switcher when installed from the .deb, matching the snap version.',
+      ],
+      'es': [
+        'Paquete .deb corregido: DocFlow ahora se abre correctamente después de instalarlo desde el .deb o el repositorio apt, incluso en sistemas sin bibliotecas gráficas (EGL/OpenGL ES) preinstaladas.',
+        'Icono correcto en el menú de aplicaciones, el dock y el selector de ventanas al instalar desde el .deb, igual que en la versión snap.',
+      ],
+    },
+  ),
+  BackendVersion(
     version: '3.0.0',
     localizedChanges: {
       'pt': [

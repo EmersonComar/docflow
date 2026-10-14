@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'DocFlow',
-      applicationVersion: '3.0.0',
+      applicationVersion: '3.0.1',
       applicationIcon: const Icon(Icons.folder_special_rounded, size: 48),
       children: [
         const SizedBox(height: 16),

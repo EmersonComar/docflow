@@ -148,7 +148,8 @@ dependencies:
 
 - **v2.1.0** — Abstração + SQLite funcionando
 - **v2.2.0** — PostgreSQL + Criptografia via keyring do SO
-- **v3.0.0** (Atual) — Busca full-text (FTS5/tsvector), ordenação, templates fixados, tags com autocomplete; criptografia migrada para AES-256-GCM; TLS do PostgreSQL com verificação de certificado (+ suporte a certificado autoassinado)
+- **v3.0.0** — Busca full-text (FTS5/tsvector), ordenação, templates fixados, tags com autocomplete; criptografia migrada para AES-256-GCM; TLS do PostgreSQL com verificação de certificado (+ suporte a certificado autoassinado)
+- **v3.0.1** (Atual) — Correções no pacote .deb: dependências EGL/GLES declaradas (app não abria em sistemas limpos) e ícone/lançador alinhados ao APPLICATION_ID
 - **v2.4.0** (planejado) — MySQL/MariaDB suportado
 
 ## Segurança

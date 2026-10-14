@@ -23,7 +23,7 @@ void main(List<String> args) async {
 
   if (args.contains('--version') || args.contains('-v')) {
     try {
-      stdout.writeln('DocFlow version 3.0.0');
+      stdout.writeln('DocFlow version 3.0.1');
     } catch (e) {
       stdout.writeln('DocFlow version unknown');
     }

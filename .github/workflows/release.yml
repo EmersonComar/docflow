@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            clang cmake ninja-build pkg-config dpkg-dev \
+            clang cmake ninja-build pkg-config dpkg-dev imagemagick \
             libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libblkid-dev
 
       - uses: subosito/flutter-action@v2
@@ -52,14 +52,22 @@ jobs:
           mkdir -p "$PKGROOT/usr/bin"
           ln -s /opt/docflow/docflow "$PKGROOT/usr/bin/docflow"
 
+          # O nome do .desktop precisa bater com o APPLICATION_ID (linux/CMakeLists.txt)
+          # para o shell associar a janela ao lançador e exibir o ícone correto.
+          APP_ID=com.ixcsoft.docflow
           mkdir -p "$PKGROOT/usr/share/applications"
           sed -e 's|Exec=docflow|Exec=/opt/docflow/docflow|' \
               -e 's|Icon=${SNAP}/meta/gui/docflow.png|Icon=docflow|' \
+              -e "\$a StartupWMClass=$APP_ID" \
               snap/gui/docflow.desktop \
-              > "$PKGROOT/usr/share/applications/docflow.desktop"
+              > "$PKGROOT/usr/share/applications/$APP_ID.desktop"
 
-          mkdir -p "$PKGROOT/usr/share/icons/hicolor/1024x1024/apps"
-          cp snap/gui/docflow.png "$PKGROOT/usr/share/icons/hicolor/1024x1024/apps/docflow.png"
+          # O tema hicolor não define 1024x1024; gera os tamanhos padrão a partir do PNG do snap.
+          for SIZE in 48 64 128 256 512; do
+            ICON_DIR="$PKGROOT/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+            mkdir -p "$ICON_DIR"
+            convert snap/gui/docflow.png -resize "${SIZE}x${SIZE}" "$ICON_DIR/docflow.png"
+          done
 
           mkdir -p debian
           printf '%s\n' \
@@ -78,6 +86,10 @@ jobs:
             "$PKGROOT/opt/docflow/docflow" "$PKGROOT/opt/docflow/lib"/*.so* 2>/dev/null \
             | sed 's/^shlibs:Depends=//')
 
+          # O Flutter (via libepoxy) carrega libEGL.so.1 e libGLESv2.so.2 com dlopen,
+          # então o dpkg-shlibdeps não as detecta. Sem elas o app aborta ao iniciar.
+          SHLIBS_DEPENDS="$SHLIBS_DEPENDS, libegl1, libgles2"
+
           mkdir -p "$PKGROOT/DEBIAN"
           printf '%s\n' \
             "Package: docflow" \
@@ -95,8 +107,23 @@ jobs:
 
           dpkg-deb --build --root-owner-group "$PKGROOT" "docflow_${VERSION}_amd64.deb"
 
-      - name: Verify .deb installs cleanly
-        run: sudo apt-get install -y ./docflow_*.deb
+      # Roda em container limpo: o runner já tem libs gráficas instaladas e
+      # mascararia dependências ausentes no pacote.
+      - name: Verify .deb installs and launches on a clean system
+        run: |
+          docker run --rm -v "$PWD:/pkg:ro" ubuntu:24.04 bash -euc '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y -qq --no-install-recommends /pkg/docflow_*.deb xvfb xauth
+            useradd -m tester
+            set +e
+            su tester -c "cd ~ && timeout 15 xvfb-run -a docflow"
+            status=$?
+            if [ "$status" -ne 124 ]; then
+              echo "::error::docflow encerrou durante a inicialização (exit $status)"
+              exit 1
+            fi
+          '
 
       - name: Create GitHub Release
         env:
